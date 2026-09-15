@@ -281,6 +281,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
   <div class="logo">
     <h1>⚡ Flexplorer</h1>
     <p>Technical Course</p>
+    <button id="fs-btn" onclick="toggleFullscreen()" title="Full screen"
+      style="margin-top:8px;width:100%;padding:5px 0;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);
+             border-radius:6px;color:var(--flex);font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.3px;">
+      ⛶ Full Screen
+    </button>
   </div>
   <div class="nav-item active" onclick="scrollTo('s-map')" data-section="s-map">
     <div class="nav-dot" style="background:var(--flex)"></div> System Map
@@ -2496,6 +2501,27 @@ function erClick(id) {
     </div>`;
   panel.style.display = 'block';
 }
+
+// ══════ FULLSCREEN ══════
+function toggleFullscreen() {
+  const btn = document.getElementById('fs-btn');
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => {
+      btn.textContent = '✕ Exit Full Screen';
+    }).catch(() => {
+      // Fallback: open self in new tab (works even without allowfullscreen)
+      window.open(location.href, '_blank');
+    });
+  } else {
+    document.exitFullscreen().then(() => {
+      btn.textContent = '⛶ Full Screen';
+    });
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  const btn = document.getElementById('fs-btn');
+  if (btn) btn.textContent = document.fullscreenElement ? '✕ Exit Full Screen' : '⛶ Full Screen';
+});
 
 // ══════ GLOSSARY SEARCH ══════
 function filterGlossary() {
