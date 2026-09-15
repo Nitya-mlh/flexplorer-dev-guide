@@ -1,0 +1,2511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flexplorer — Technical Course</title>
+<style>
+:root {
+  --bg: #0a0b14;
+  --card: #111827;
+  --card2: #1a2035;
+  --border: #1e2a45;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --ui: #818cf8;
+  --flex: #22d3ee;
+  --esds: #fb923c;
+  --esdmr: #f87171;
+  --esdos: #34d399;
+  --eos: #a78bfa;
+  --hdm: #fbbf24;
+  --s3: #60a5fa;
+  --sqs: #fcd34d;
+  --lambda: #f472b6;
+  --ecs: #4ade80;
+  --mysql: #94a3b8;
+  --redshift: #f43f5e;
+  --eb: #c084fc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+#sidebar {
+  width: 220px; min-width: 220px; background: var(--card); border-right: 1px solid var(--border);
+  position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 100;
+  padding: 20px 0;
+}
+#sidebar .logo { padding: 0 16px 20px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+#sidebar .logo h1 { font-size: 15px; font-weight: 700; color: var(--flex); letter-spacing: 0.5px; }
+#sidebar .logo p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.nav-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+  cursor: pointer; font-size: 12.5px; color: var(--muted); transition: all 0.2s;
+  border-left: 3px solid transparent; user-select: none;
+}
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.nav-item.active { color: var(--text); background: rgba(34,211,238,0.08); border-left-color: var(--flex); }
+.nav-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Main */
+#main { margin-left: 220px; padding: 40px 48px; max-width: 1100px; width: 100%; }
+.section { margin-bottom: 80px; scroll-margin-top: 30px; }
+.section-header { margin-bottom: 28px; }
+.section-header h2 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+.section-header p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; text-transform: uppercase; }
+
+/* Cards */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.card-grid { display: grid; gap: 16px; }
+.card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+/* Service badge */
+.svc-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+
+/* Code */
+.code-block { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'Cascadia Code','Fira Code',monospace; font-size: 12px; line-height: 1.7; overflow-x: auto; margin: 12px 0; }
+.code-block .comment { color: #6b7280; }
+.code-block .key { color: var(--flex); }
+.code-block .val { color: #34d399; }
+.code-block .str { color: #fbbf24; }
+.code-block .fn { color: #818cf8; }
+
+/* ── SYSTEM MAP ── */
+#arch-scroll-wrap {
+  overflow-x: auto; border: 1px solid var(--border); border-radius: 12px;
+}
+#arch-diagram {
+  position: relative; width: 100%; min-width: 860px; height: 640px;
+  background: var(--card); border-radius: 12px;
+  overflow: hidden;
+}
+#arch-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.arch-node {
+  position: absolute; border-radius: 10px; border: 2px solid; padding: 10px 14px;
+  cursor: pointer; transition: all 0.25s; user-select: none; z-index: 5;
+  background: var(--card2);
+}
+.arch-node:hover { transform: scale(1.04); z-index: 10; }
+.arch-node.highlighted { z-index: 10; transform: scale(1.06); }
+.arch-node.dimmed { opacity: 0.15; filter: grayscale(0.6); }
+.arch-node.node-visited { opacity: 0.55; }
+.arch-node .n-title { font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+.arch-node .n-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.arch-node .n-type { font-size: 9px; margin-top: 4px; opacity: 0.7; }
+
+#arch-legend { position: absolute; bottom: 12px; left: 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
+.legend-line { width: 24px; height: 2px; }
+
+#node-tooltip {
+  position: absolute; background: #1e293b; border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 16px; max-width: 260px; font-size: 12px; line-height: 1.6;
+  pointer-events: none; z-index: 50; display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+#node-tooltip h4 { font-size: 13px; margin-bottom: 6px; }
+#node-tooltip ul { padding-left: 14px; color: var(--muted); }
+#node-tooltip li { margin-bottom: 3px; }
+
+/* Animated data packet */
+@keyframes flowAnim {
+  0% { offset-distance: 0%; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+.data-packet {
+  position: absolute; width: 8px; height: 8px; border-radius: 50%;
+  offset-rotate: 0deg; animation: flowAnim 2.5s linear infinite;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* ── FLOW DIAGRAMS ── */
+.flow-diagram { display: flex; align-items: center; gap: 0; flex-wrap: nowrap; overflow-x: auto; padding: 24px 0; }
+.flow-node {
+  flex-shrink: 0; background: var(--card2); border: 2px solid; border-radius: 10px;
+  padding: 12px 16px; min-width: 120px; text-align: center;
+}
+.flow-node .fn-title { font-size: 12px; font-weight: 700; }
+.flow-node .fn-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.flow-arrow {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+  padding: 0 4px; min-width: 60px;
+}
+.flow-arrow .arrow-line { position: relative; width: 100%; height: 2px; background: var(--border); }
+.flow-arrow .arrow-line::after {
+  content: ''; position: absolute; right: -1px; top: -4px;
+  border: 5px solid transparent; border-left-color: var(--border);
+}
+.flow-arrow .arrow-label { font-size: 9px; color: var(--muted); margin-top: 4px; text-align: center; white-space: nowrap; }
+.flow-arrow.sqs .arrow-line { background: var(--sqs); }
+.flow-arrow.sqs .arrow-line::after { border-left-color: var(--sqs); }
+.flow-arrow.http .arrow-line { background: var(--flex); }
+.flow-arrow.http .arrow-line::after { border-left-color: var(--flex); }
+.flow-arrow.s3 .arrow-line { background: var(--s3); }
+.flow-arrow.s3 .arrow-line::after { border-left-color: var(--s3); }
+.flow-arrow.ecs .arrow-line { background: var(--ecs); }
+.flow-arrow.ecs .arrow-line::after { border-left-color: var(--ecs); }
+
+/* Animated packet on arrows */
+.flow-arrow { position: relative; }
+.flow-packet {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 10px; height: 10px; border-radius: 50%;
+  animation: slidePacket 2s linear infinite;
+  box-shadow: 0 0 8px currentColor; z-index: 5;
+}
+@keyframes slidePacket {
+  0% { left: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: calc(100% - 10px); opacity: 0; }
+}
+
+/* ── STATE MACHINE ── */
+.state-machine { display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+.state-node {
+  border-radius: 50%; width: 90px; height: 90px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  border: 3px solid; font-size: 11px; font-weight: 700; cursor: pointer;
+  transition: all 0.3s; position: relative; flex-shrink: 0;
+}
+.state-node.active { box-shadow: 0 0 20px currentColor; transform: scale(1.1); }
+.state-arrow { width: 40px; height: 2px; background: var(--border); position: relative; flex-shrink: 0; }
+.state-arrow::after {
+  content: ''; position: absolute; right: -1px; top: -4px;
+  border: 5px solid transparent; border-left-color: var(--border);
+}
+.state-arrow.active-path { background: var(--esds); }
+.state-arrow.active-path::after { border-left-color: var(--esds); }
+
+/* ── S3 TREE ── */
+.tree-root { font-family: 'Cascadia Code','Fira Code',monospace; font-size: 12px; }
+.tree-item { display: flex; align-items: flex-start; gap: 6px; padding: 2px 0; cursor: pointer; }
+.tree-item:hover .tree-label { color: var(--text); }
+.tree-toggle { color: var(--muted); width: 12px; flex-shrink: 0; }
+.tree-icon { flex-shrink: 0; }
+.tree-label { color: var(--muted); }
+.tree-label.dir { color: var(--s3); }
+.tree-label.file { color: #94a3b8; }
+.tree-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-left: 6px; }
+.tree-children { margin-left: 18px; border-left: 1px solid var(--border); padding-left: 10px; }
+
+/* ── PUBLISH TIMELINE ── */
+.timeline { position: relative; padding-left: 32px; }
+.timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.timeline-step {
+  position: relative; margin-bottom: 28px; opacity: 0.4; transition: all 0.4s;
+}
+.timeline-step.done { opacity: 1; }
+.timeline-step.active { opacity: 1; }
+.timeline-dot {
+  position: absolute; left: -27px; top: 2px;
+  width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--border);
+  background: var(--card); display: flex; align-items: center; justify-content: center;
+  font-size: 8px; transition: all 0.4s;
+}
+.timeline-step.done .timeline-dot { border-color: var(--esdos); background: var(--esdos); color: #000; }
+.timeline-step.active .timeline-dot { border-color: var(--flex); background: var(--flex); color: #000; box-shadow: 0 0 12px var(--flex); }
+.timeline-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.timeline-body { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+/* ── QUEUE DIAGRAM ── */
+.queue-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.queue-box {
+  background: rgba(252,211,77,0.1); border: 2px solid var(--sqs); border-radius: 8px;
+  padding: 10px 16px; font-size: 12px; min-width: 240px;
+}
+.queue-box .q-name { color: var(--sqs); font-weight: 700; font-size: 11px; }
+.queue-box .q-stats { color: var(--muted); font-size: 10px; margin-top: 4px; }
+.queue-msg { background: rgba(252,211,77,0.2); border: 1px solid var(--sqs); border-radius: 6px; padding: 6px 10px; font-size: 11px; font-family: monospace; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* Tabs */
+.tab-bar { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.tab-btn {
+  padding: 8px 16px; font-size: 12.5px; cursor: pointer; border-bottom: 2px solid transparent;
+  color: var(--muted); transition: all 0.2s; user-select: none; margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--flex); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Glossary */
+.glossary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.gloss-item { background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.gloss-term { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.gloss-def { font-size: 12px; color: var(--muted); line-height: 1.5; }
+/* ER diagram */
+.er-entity { border: 1.5px solid; border-radius: 8px; padding: 10px 14px; margin-bottom: 4px;
+  background: var(--card2); transition: all 0.15s; }
+.er-entity:hover { transform: translateX(3px); filter: brightness(1.2); }
+.er-entity.er-active { box-shadow: 0 0 14px currentColor; transform: translateX(3px); }
+.er-name { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+.er-pk { font-size: 10px; color: var(--sqs); }
+.er-fk { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* Helpers */
+.flex { display: flex; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.text-sm { font-size: 13px; }
+.text-xs { font-size: 11px; }
+.text-muted { color: var(--muted); }
+.bold { font-weight: 700; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+  border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+  border: none; transition: all 0.2s;
+}
+.btn-primary { background: var(--flex); color: #000; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:hover { color: var(--text); border-color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<nav id="sidebar">
+  <div class="logo">
+    <h1>⚡ Flexplorer</h1>
+    <p>Technical Course</p>
+  </div>
+  <div class="nav-item active" onclick="scrollTo('s-map')" data-section="s-map">
+    <div class="nav-dot" style="background:var(--flex)"></div> System Map
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-tabs')" data-section="s-tabs">
+    <div class="nav-dot" style="background:var(--ui)"></div> Three Tabs
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-concepts')" data-section="s-concepts">
+    <div class="nav-dot" style="background:#e2e8f0"></div> Core Concepts
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-ic')" data-section="s-ic">
+    <div class="nav-dot" style="background:var(--ui)"></div> Investment Cases
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-bm')" data-section="s-bm">
+    <div class="nav-dot" style="background:var(--esds)"></div> Backcast Benchmarks
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-lb')" data-section="s-lb">
+    <div class="nav-dot" style="background:var(--eos)"></div> Real Performance
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-sim')" data-section="s-sim">
+    <div class="nav-dot" style="background:var(--esdmr)"></div> Simulation Engine
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-esdos')" data-section="s-esdos">
+    <div class="nav-dot" style="background:var(--esdos)"></div> Output Pipeline
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-queues')" data-section="s-queues">
+    <div class="nav-dot" style="background:var(--sqs)"></div> Queues
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-s3')" data-section="s-s3">
+    <div class="nav-dot" style="background:var(--s3)"></div> S3 Structure
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-publish')" data-section="s-publish">
+    <div class="nav-dot" style="background:var(--esdos)"></div> Publish a Benchmark
+  </div>
+  <div class="nav-item" onclick="scrollTo('s-glossary')" data-section="s-glossary">
+    <div class="nav-dot" style="background:var(--muted)"></div> Glossary
+  </div>
+</nav>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main id="main">
+
+<!-- ══════════════════════════════════════════
+     SECTION 1: SYSTEM MAP
+══════════════════════════════════════════ -->
+<section class="section" id="s-map">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(34,211,238,0.15);color:var(--flex)">Architecture</div>
+    <h2>System Map</h2>
+    <p>All 7 services that power Flexplorer. Click any node to see what it does and how it connects. Toggle flows with the buttons below.</p>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="startFlow('ic')">▶ Animate All Flows</button>
+    <button class="btn btn-ghost" onclick="stopFlow()">⏹ Stop</button>
+    <button class="btn btn-ghost" onclick="startFlow('ic')">Investment Cases path</button>
+    <button class="btn btn-ghost" onclick="startFlow('bc')">Benchmark path</button>
+    <button class="btn btn-ghost" onclick="startFlow('lb')">Leaderboard path</button>
+    <button class="btn btn-ghost" onclick="resetHighlight()">Reset</button>
+  </div>
+
+  <div id="arch-scroll-wrap">
+  <div id="arch-diagram">
+    <!-- SVG for arrows -->
+    <svg id="arch-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow-flex" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="var(--flex)" opacity="0.7"/>
+        </marker>
+        <marker id="arrow-sqs" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="var(--sqs)"/>
+        </marker>
+        <marker id="arrow-s3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="var(--s3)" opacity="0.7"/>
+        </marker>
+        <marker id="arrow-ecs" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="var(--ecs)" opacity="0.7"/>
+        </marker>
+        <marker id="arrow-db" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="var(--eos)" opacity="0.7"/>
+        </marker>
+        <filter id="glow-dot" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-node" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Arrows drawn by JS -->
+    </svg>
+
+    <!-- Nodes - positioned absolutely -->
+    <div class="arch-node" id="node-ui" style="border-color:var(--ui);top:20px;left:370px;"
+         onclick="showNodeInfo('ui')">
+      <div class="n-title" style="color:var(--ui)">aurora-ui</div>
+      <div class="n-sub">Flexplorer Frontend</div>
+      <div class="n-type" style="color:var(--ui)">React / Redux</div>
+    </div>
+
+    <div class="arch-node" id="node-flex" style="border-color:var(--flex);top:160px;left:310px;"
+         onclick="showNodeInfo('flex')">
+      <div class="n-title" style="color:var(--flex)">flex-explorer-microservice</div>
+      <div class="n-sub">The API backend</div>
+      <div class="n-type" style="color:var(--flex)">2× Lambda · Node.js · Express</div>
+    </div>
+
+    <div class="arch-node" id="node-esds" style="border-color:var(--esds);top:310px;left:120px;"
+         onclick="showNodeInfo('esds')">
+      <div class="n-title" style="color:var(--esds)">ESDS</div>
+      <div class="n-sub">Simulation Orchestrator</div>
+      <div class="n-type" style="color:var(--esds)">7× Lambda · Node.js</div>
+    </div>
+
+    <div class="arch-node" id="node-esdos" style="border-color:var(--esdos);top:310px;left:500px;"
+         onclick="showNodeInfo('esdos')">
+      <div class="n-title" style="color:var(--esdos)">ESDOS</div>
+      <div class="n-sub">Output Processor</div>
+      <div class="n-type" style="color:var(--esdos)">4× Lambda · Python</div>
+    </div>
+
+    <div class="arch-node" id="node-esdmr" style="border-color:var(--esdmr);top:460px;left:60px;"
+         onclick="showNodeInfo('esdmr')">
+      <div class="n-title" style="color:var(--esdmr)">ESDMR</div>
+      <div class="n-sub">Chronos Model Runner</div>
+      <div class="n-type" style="color:var(--esdmr)">ECS Fargate · Docker</div>
+    </div>
+
+    <div class="arch-node" id="node-eos" style="border-color:var(--eos);top:310px;left:700px;"
+         onclick="showNodeInfo('eos')">
+      <div class="n-title" style="color:var(--eos)">eos-data-uploader</div>
+      <div class="n-sub">Real Data → S3</div>
+      <div class="n-type" style="color:var(--eos)">2× Lambda · Step Function</div>
+    </div>
+
+    <div class="arch-node" id="node-hdm" style="border-color:var(--hdm);top:460px;left:700px;"
+         onclick="showNodeInfo('hdm')">
+      <div class="n-title" style="color:var(--hdm)">historical-data-microservice</div>
+      <div class="n-sub">ETL Pipeline</div>
+      <div class="n-type" style="color:var(--hdm)">3× Lambda · ECS · Step Function</div>
+    </div>
+
+    <!-- S3 buckets -->
+    <div class="arch-node" id="node-s3a" style="border-color:var(--s3);top:460px;left:240px;background:rgba(96,165,250,0.06);"
+         onclick="showNodeInfo('s3a')">
+      <div class="n-title" style="color:var(--s3)">S3: dispatch</div>
+      <div class="n-sub">simulation I/O</div>
+    </div>
+
+    <div class="arch-node" id="node-s3b" style="border-color:var(--s3);top:460px;left:430px;background:rgba(96,165,250,0.06);"
+         onclick="showNodeInfo('s3b')">
+      <div class="n-title" style="color:var(--s3)">S3: flex-explorer</div>
+      <div class="n-sub">vis CSVs · configs</div>
+    </div>
+
+    <div class="arch-node" id="node-s3c" style="border-color:var(--s3);top:560px;left:600px;background:rgba(96,165,250,0.06);"
+         onclick="showNodeInfo('s3c')">
+      <div class="n-title" style="color:var(--s3)">S3: eos-data</div>
+      <div class="n-sub">parquet · CSVs</div>
+    </div>
+
+    <!-- Step label shown during animation -->
+    <div id="flow-step-label" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);
+      background:rgba(15,23,42,0.92);border:1px solid var(--border);border-radius:20px;
+      padding:5px 16px;font-size:12px;font-weight:600;color:var(--text);pointer-events:none;z-index:20;
+      white-space:nowrap;letter-spacing:0.3px;"></div>
+
+    <!-- Legend -->
+    <div id="arch-legend">
+      <div class="legend-item"><div class="legend-line" style="background:var(--flex)"></div> HTTP</div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--sqs)"></div> SQS</div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--s3)"></div> S3</div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--ecs)"></div> ECS RunTask</div>
+    </div>
+  </div>
+  </div>
+
+  <!-- Node info tooltip -->
+  <div id="node-tooltip"></div>
+
+  <!-- Node info cards -->
+  <div id="node-info-panel" class="card mt-16" style="display:none;border-left:4px solid var(--flex)">
+    <div id="node-info-content"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 2: THREE TABS OVERVIEW
+══════════════════════════════════════════ -->
+<section class="section" id="s-tabs">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(129,140,248,0.15);color:var(--ui)">Overview</div>
+    <h2>The Three Tabs</h2>
+    <p>Flexplorer has three distinct views. Each tab is backed by a different data pipeline. Click each card to explore.</p>
+  </div>
+
+  <div class="card-grid cols-3">
+    <div class="card" style="border-top:3px solid var(--ui);cursor:pointer" onclick="scrollTo('s-ic')">
+      <div style="font-size:24px;margin-bottom:12px">📊</div>
+      <div style="color:var(--ui);font-weight:700;font-size:14px;margin-bottom:8px">Investment Cases</div>
+      <div class="text-sm text-muted" style="line-height:1.6">Forward-looking. Shows how much revenue a modelled battery would earn under Aurora's price scenarios. Backed by <strong>Chronos simulations</strong>. Chart data is generated on-demand via ESDOS.</div>
+      <div class="mt-16" style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="pill" style="background:rgba(34,211,238,0.15);color:var(--flex)">flex-microservice</span>
+        <span class="pill" style="background:rgba(52,211,153,0.15);color:var(--esdos)">ESDOS</span>
+        <span class="pill" style="background:rgba(96,165,250,0.15);color:var(--s3)">S3</span>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--esds);cursor:pointer" onclick="scrollTo('s-bm')">
+      <div style="font-size:24px;margin-bottom:12px">📅</div>
+      <div style="color:var(--esds);font-weight:700;font-size:14px;margin-bottom:8px">Backcast Benchmarks</div>
+      <div class="text-sm text-muted" style="line-height:1.6">Backward-looking. Shows how a modelled battery <em>would have</em> performed historically. Month-by-month sliced simulation data. Published by Aurora analysts.</div>
+      <div class="mt-16" style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="pill" style="background:rgba(34,211,238,0.15);color:var(--flex)">flex-microservice</span>
+        <span class="pill" style="background:rgba(251,146,60,0.15);color:var(--esds)">ESDS</span>
+        <span class="pill" style="background:rgba(52,211,153,0.15);color:var(--esdos)">ESDOS</span>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--eos);cursor:pointer" onclick="scrollTo('s-lb')">
+      <div style="font-size:24px;margin-bottom:12px">🔴</div>
+      <div style="color:var(--eos);font-weight:700;font-size:14px;margin-bottom:8px">Real Performance</div>
+      <div class="text-sm text-muted" style="line-height:1.6">Real metered data. Shows how <em>actual</em> batteries in the market are performing — rankings, cashflow, volume. No Chronos involved. EOS pipeline feeds parquet files to DuckDB.</div>
+      <div class="mt-16" style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">eos-data-uploader</span>
+        <span class="pill" style="background:rgba(96,165,250,0.15);color:var(--s3)">S3 Parquet</span>
+        <span class="pill" style="background:rgba(34,211,238,0.15);color:var(--flex)">DuckDB</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-16" style="background:rgba(34,211,238,0.05)">
+    <div class="text-sm" style="line-height:1.8;">
+      <strong>Mental model:</strong> Tabs 1 & 2 are powered by the <strong style="color:var(--esds)">Chronos dispatch model</strong> — Aurora simulates what a battery earns.
+      Tab 3 is powered by <strong style="color:var(--eos)">EOS</strong> — real metered data from actual batteries.
+      The <strong style="color:var(--flex)">flex-explorer-microservice</strong> is the single API that serves all three tabs.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION: CORE CONCEPTS
+══════════════════════════════════════════ -->
+<section class="section" id="s-concepts">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(226,232,240,0.15);color:#e2e8f0">Concepts</div>
+    <h2>Core Concepts</h2>
+    <p>The entities that power Flexplorer, how they differ, how they connect — and how the data model is evolving from V3 to V4.</p>
+  </div>
+
+  <!-- ── ENTITY CARDS ── -->
+  <div class="bold mb-16" style="font-size:15px">The Six Entities</div>
+  <div class="card-grid cols-3" style="margin-bottom:24px">
+
+    <div class="card" style="border-top:3px solid var(--esds)">
+      <div style="font-size:18px mb-4">🔬</div>
+      <div class="bold" style="color:var(--esds);margin-bottom:6px">Simulation</div>
+      <div class="text-xs text-muted" style="line-height:1.7">
+        The <strong>atomic unit</strong>. A single Chronos model run. For backcasting it covers <strong>exactly one calendar month</strong> (to prevent the optimizer having foresight over future months). For Investment Cases it spans multiple years.<br><br>
+        Lives in <strong>ESDS</strong>. Must always belong to a Project (<code>project_id NOT NULL FK</code>). Produces <code>site_out_monthly/daily/yearly.csv</code>.
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="pill" style="background:rgba(251,146,60,0.15);color:var(--esds)">ESDS owns</span>
+        <span class="pill" style="background:rgba(100,116,139,0.15);color:var(--muted)">Internal only</span>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--muted)">
+      <div style="font-size:18px mb-4">📁</div>
+      <div class="bold" style="color:#94a3b8;margin-bottom:6px">Project</div>
+      <div class="text-xs text-muted" style="line-height:1.7">
+        A <strong>container for simulations</strong> inside ESDS. Groups related runs together — e.g., all simulations for a quarterly FLEX cycle in a given region. Has a title, description, team, and tenant.<br><br>
+        Every simulation currently requires a <code>project_id</code>. This is the constraint that the V4 design will relax to support asset-specific backcasting.
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="pill" style="background:rgba(251,146,60,0.15);color:var(--esds)">ESDS owns</span>
+        <span class="pill" style="background:rgba(100,116,139,0.15);color:var(--muted)">Internal only</span>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--esdmr)">
+      <div style="font-size:18px mb-4">⏪</div>
+      <div class="bold" style="color:var(--esdmr);margin-bottom:6px">Backcast</div>
+      <div class="text-xs text-muted" style="line-height:1.7">
+        A <strong>collection of monthly simulations</strong> run against <em>historical</em> market prices. Its objective is to show what a standardized battery would theoretically have earned in past months, and to calibrate Chronos against what actually happened.<br><br>
+        Lives in <strong>ESDS</strong>. Linked to simulations via the <code>backcast_simulations</code> join table. Also FK'd to a Project.
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="pill" style="background:rgba(251,146,60,0.15);color:var(--esds)">ESDS owns</span>
+        <span class="pill" style="background:rgba(100,116,139,0.15);color:var(--muted)">Internal only</span>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--esdos)">
+      <div style="font-size:18px mb-4">📊</div>
+      <div class="bold" style="color:var(--esdos);margin-bottom:6px">Benchmark</div>
+      <div class="text-xs text-muted" style="line-height:1.7">
+        The <strong>client-visible published container</strong> in flex-microservice. Wraps N monthly simulations and exposes them as a single named product — "GBR 2hr Standard Benchmark". Has <code>Draft → Published → Retired</code> lifecycle.<br><br>
+        Linked to simulations via <code>benchmarks_metadata</code> (stores <code>simulation_uuid</code> as an opaque string — no DB-level FK across services).
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="pill" style="background:rgba(34,211,238,0.15);color:var(--flex)">flex-microservice owns</span>
+        <span class="pill" style="background:rgba(52,211,153,0.15);color:var(--esdos)">Client-visible</span>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--ui)">
+      <div style="font-size:18px mb-4">📈</div>
+      <div class="bold" style="color:var(--ui);margin-bottom:6px">FlexScenario</div>
+      <div class="text-xs text-muted" style="line-height:1.7">
+        A <strong>grouping of Investment Cases</strong> by region, sensitivity, and PRMF cycle — e.g., "GBR Central Flex Cycle 3". Published quarterly by Research.<br><br>
+        Think of it as the "folder" for forward-looking forecasts. Has the same <code>Draft → Published → Retired</code> lifecycle as a Benchmark.
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="pill" style="background:rgba(34,211,238,0.15);color:var(--flex)">flex-microservice owns</span>
+        <span class="pill" style="background:rgba(52,211,153,0.15);color:var(--esdos)">Client-visible</span>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--flex)">
+      <div style="font-size:18px mb-4">🔋</div>
+      <div class="bold" style="color:var(--flex);margin-bottom:6px">InvestmentCase</div>
+      <div class="text-xs text-muted" style="line-height:1.7">
+        One battery asset configuration (duration, power, site, technology) modelled as a <strong>single ESDS simulation</strong>. Belongs to a FlexScenario. Covers multiple years.<br><br>
+        Stores <code>simulation_uuid</code> as a cross-service opaque reference to ESDS. The <code>config</code> JSON contains priceZone, forecast_start/end, and Chronos site parameters.
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="pill" style="background:rgba(34,211,238,0.15);color:var(--flex)">flex-microservice owns</span>
+        <span class="pill" style="background:rgba(52,211,153,0.15);color:var(--esdos)">Client-visible</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COMPARISON TABLE ── -->
+  <div class="card mb-24">
+    <div class="bold mb-12" style="font-size:15px">How They Differ at a Glance</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border)">
+            <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600"></th>
+            <th style="padding:8px 12px;text-align:left;color:var(--esds)">Simulation</th>
+            <th style="padding:8px 12px;text-align:left;color:var(--esdmr)">Backcast</th>
+            <th style="padding:8px 12px;text-align:left;color:var(--esdos)">Benchmark</th>
+            <th style="padding:8px 12px;text-align:left;color:var(--ui)">InvestmentCase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:8px 12px;color:var(--muted);font-weight:600">Service</td>
+            <td style="padding:8px 12px">ESDS</td>
+            <td style="padding:8px 12px">ESDS</td>
+            <td style="padding:8px 12px">flex-microservice</td>
+            <td style="padding:8px 12px">flex-microservice</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+            <td style="padding:8px 12px;color:var(--muted);font-weight:600">Granularity</td>
+            <td style="padding:8px 12px">1 month (backcast)<br>or N years (IC)</td>
+            <td style="padding:8px 12px">N months</td>
+            <td style="padding:8px 12px">N months (published)</td>
+            <td style="padding:8px 12px">N years</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:8px 12px;color:var(--muted);font-weight:600">Price input</td>
+            <td style="padding:8px 12px">Either</td>
+            <td style="padding:8px 12px"><strong style="color:var(--esdmr)">Historical</strong> prices</td>
+            <td style="padding:8px 12px"><strong style="color:var(--esdmr)">Historical</strong> prices</td>
+            <td style="padding:8px 12px"><strong style="color:var(--ui)">Forward-looking</strong> (Aurora modelled)</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+            <td style="padding:8px 12px;color:var(--muted);font-weight:600">Asset scope</td>
+            <td style="padding:8px 12px">One config</td>
+            <td style="padding:8px 12px">Regional standard (V3)<br>Asset-specific (V4)</td>
+            <td style="padding:8px 12px">Regional standard (V3)</td>
+            <td style="padding:8px 12px">One specific asset config</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:8px 12px;color:var(--muted);font-weight:600">Client-visible?</td>
+            <td style="padding:8px 12px">❌ No</td>
+            <td style="padding:8px 12px">❌ No (ESDS internal)</td>
+            <td style="padding:8px 12px">✅ Yes (Tab 2)</td>
+            <td style="padding:8px 12px">✅ Yes (Tab 1)</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+            <td style="padding:8px 12px;color:var(--muted);font-weight:600">Published by</td>
+            <td style="padding:8px 12px">Engineering / API</td>
+            <td style="padding:8px 12px">Research (internal)</td>
+            <td style="padding:8px 12px">Research (monthly, ~8th)</td>
+            <td style="padding:8px 12px">Research (quarterly FLEX cycle)</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 12px;color:var(--muted);font-weight:600">DB owner</td>
+            <td style="padding:8px 12px"><code>simulations</code> table</td>
+            <td style="padding:8px 12px"><code>backcasts</code> table</td>
+            <td style="padding:8px 12px"><code>benchmarks</code> table</td>
+            <td style="padding:8px 12px"><code>investment_cases</code> table</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── ENTITY RELATIONSHIP DIAGRAM ── -->
+  <div class="card mb-24">
+    <div class="bold mb-4" style="font-size:15px">Entity Relationships</div>
+    <div class="text-xs text-muted mb-16">Click any entity to see its key fields and FK constraints</div>
+
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+      <!-- ESDS side -->
+      <div style="flex:1;min-width:320px">
+        <div class="text-xs" style="color:var(--esds);font-weight:700;margin-bottom:10px;letter-spacing:1px">ESDS (energy-storage-dispatch-service)</div>
+        <div style="display:flex;flex-direction:column;gap:0">
+
+          <div class="er-entity" id="er-team" onclick="erClick('team')" style="border-color:var(--muted);cursor:pointer">
+            <div class="er-name" style="color:#94a3b8">Team</div>
+            <div class="er-pk">🔑 team_id</div>
+          </div>
+          <div style="padding-left:24px;color:var(--muted);font-size:11px">1 ──&lt; N (default_team_id FK on projects)</div>
+
+          <div class="er-entity" id="er-project" onclick="erClick('project')" style="border-color:#94a3b8;cursor:pointer">
+            <div class="er-name" style="color:#94a3b8">Project</div>
+            <div class="er-pk">🔑 project_id</div>
+          </div>
+          <div style="padding-left:24px;color:var(--muted);font-size:11px">1 ──&lt; N (project_id NOT NULL FK — <strong style="color:var(--esdmr)">the V4 constraint to relax</strong>)</div>
+
+          <div style="display:flex;gap:16px">
+            <div style="flex:1">
+              <div class="er-entity" id="er-simulation" onclick="erClick('simulation')" style="border-color:var(--esds);cursor:pointer">
+                <div class="er-name" style="color:var(--esds)">Simulation</div>
+                <div class="er-pk">🔑 simulation_id</div>
+                <div class="er-fk">🔗 project_id (NOT NULL)</div>
+              </div>
+            </div>
+            <div style="flex:1">
+              <div class="er-entity" id="er-backcast" onclick="erClick('backcast')" style="border-color:var(--esdmr);cursor:pointer">
+                <div class="er-name" style="color:var(--esdmr)">Backcast</div>
+                <div class="er-pk">🔑 backcast_id</div>
+                <div class="er-fk">🔗 project_id (NOT NULL)</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding-left:24px;color:var(--muted);font-size:11px">M ──&lt; backcast_simulations &gt;── N (join table: backcast_id + simulation_id + forecast_start/end)</div>
+
+        </div>
+      </div>
+
+      <!-- flex-microservice side -->
+      <div style="flex:1;min-width:320px">
+        <div class="text-xs" style="color:var(--flex);font-weight:700;margin-bottom:10px;letter-spacing:1px">flex-explorer-microservice</div>
+        <div style="display:flex;flex-direction:column;gap:0">
+
+          <div class="er-entity" id="er-flexscenario" onclick="erClick('flexscenario')" style="border-color:var(--ui);cursor:pointer">
+            <div class="er-name" style="color:var(--ui)">FlexScenario</div>
+            <div class="er-pk">🔑 flex_scenario_uuid</div>
+          </div>
+          <div style="padding-left:24px;color:var(--muted);font-size:11px">1 ──&lt; N (ON DELETE CASCADE)</div>
+
+          <div class="er-entity" id="er-ic" onclick="erClick('ic')" style="border-color:var(--flex);cursor:pointer">
+            <div class="er-name" style="color:var(--flex)">InvestmentCase</div>
+            <div class="er-pk">🔑 investment_case_uuid</div>
+            <div class="er-fk">🔗 flex_scenario_uuid</div>
+            <div class="er-fk" style="color:var(--muted)">· · simulation_uuid (opaque, no FK)</div>
+          </div>
+
+          <div style="height:20px"></div>
+
+          <div class="er-entity" id="er-benchmark" onclick="erClick('benchmark')" style="border-color:var(--esdos);cursor:pointer">
+            <div class="er-name" style="color:var(--esdos)">Benchmark</div>
+            <div class="er-pk">🔑 benchmark_uuid</div>
+          </div>
+          <div style="padding-left:24px;color:var(--muted);font-size:11px">1 ──&lt; N (ON DELETE CASCADE)</div>
+
+          <div class="er-entity" id="er-bm-meta" onclick="erClick('bm-meta')" style="border-color:var(--esdos);opacity:0.8;cursor:pointer">
+            <div class="er-name" style="color:var(--esdos);font-size:11px">BenchmarkMetadata</div>
+            <div class="er-pk">🔑 id</div>
+            <div class="er-fk">🔗 benchmark_uuid</div>
+            <div class="er-fk" style="color:var(--muted)">· · simulation_uuid (opaque, no FK)</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Cross-service link -->
+      <div style="width:100%;padding:10px 16px;background:rgba(252,211,77,0.06);border:1px solid rgba(252,211,77,0.2);border-radius:8px;font-size:12px;line-height:1.6">
+        <span style="color:var(--sqs);font-weight:700">⚠ Cross-service simulation references</span> —
+        <code>investment_cases.simulation_uuid</code> and <code>benchmarks_metadata.simulation_uuid</code>
+        both point to ESDS simulations but have <strong>no database-level foreign key</strong>.
+        They are plain VARCHAR strings. If an ESDS simulation is deleted, flex-microservice will not know — it just
+        gets a 404 when it tries to fetch outputs from S3.
+      </div>
+    </div>
+
+    <!-- ER detail panel -->
+    <div id="er-detail" class="card mt-16" style="display:none;background:rgba(15,23,42,0.6)">
+      <div id="er-detail-content"></div>
+    </div>
+  </div>
+
+  <!-- ── WHY ONE MONTH AT A TIME ── -->
+  <div class="card mb-24" style="background:rgba(248,113,113,0.05);border-color:var(--esdmr)">
+    <div class="bold mb-8" style="color:var(--esdmr)">Why Backcasts Run One Month at a Time</div>
+    <div class="text-sm text-muted" style="line-height:1.8">
+      Chronos is a <strong>dispatch optimizer</strong>. If you ran it over 12 months of historical prices in a single pass,
+      the optimizer would see future months' prices and use that foresight to charge/discharge differently than a real
+      battery operator could. The result would be unrealistically high revenues — the model would "cheat".<br><br>
+      By running exactly <strong>one calendar month per simulation</strong>, the optimizer only sees the prices within
+      that month. This matches the information a real operator would have had at the time, making the
+      backcast a fair representation of achievable performance.
+    </div>
+  </div>
+
+  <!-- ── V3 → V4 EVOLUTION ── -->
+  <div class="card" style="background:rgba(129,140,248,0.04)">
+    <div class="bold mb-4" style="font-size:15px">V3 → V4: How the Data Model Is Evolving</div>
+    <div class="text-xs text-muted mb-16">Your colleague's exact point: "simulation is linked to a project — for asset-specific backcasting, we want simulation linked to a backcast."</div>
+
+    <div class="card-grid cols-2" style="gap:16px">
+      <div style="padding:16px;background:rgba(52,211,153,0.06);border:1px solid var(--esdos);border-radius:10px">
+        <div style="color:var(--esdos);font-weight:700;margin-bottom:10px">V3 — Current State (Per-Region)</div>
+        <div style="font-size:12px;line-height:1.8;color:var(--muted)">
+          Every simulation has <code style="color:var(--esds)">project_id NOT NULL</code>.<br>
+          Backcasts also FK to projects.<br>
+          Backcasts reference simulations via <code>backcast_simulations</code> join table.<br>
+          Benchmarks are <strong>regional</strong> — Aurora's standardized battery config, same for all subscribers.<br><br>
+          Published monthly by Research. Research owns the whole flow.
+        </div>
+        <div class="code-block mt-10" style="font-size:10px;line-height:1.7">
+<span class="comment">-- Today</span>
+simulations.project_id <span class="fn">NOT NULL</span>  <span class="comment">← hard constraint</span>
+backcasts.project_id   <span class="fn">NOT NULL</span>
+backcast_simulations   <span class="comment">← join table (N:M)</span>
+        </div>
+      </div>
+
+      <div style="padding:16px;background:rgba(248,113,113,0.06);border:1px solid var(--esdmr);border-radius:10px">
+        <div style="color:var(--esdmr);font-weight:700;margin-bottom:10px">V4 — Future State (Per-Asset)</div>
+        <div style="font-size:12px;line-height:1.8;color:var(--muted)">
+          Simulations will be <strong>directly linked to a backcast</strong>, not (or not only) to a project.<br>
+          Asset-specific inputs: ramp rate, SoC limits, degradation, cycle limits, production profiles.<br>
+          Client-specific tenant publication.<br>
+          Higher update frequency (daily granularity, automated monthly runs).<br>
+          API delivery for optimisers (Enspired, Terralayr, Suena, Flexpower).<br><br>
+          Piloted: Germany Research + Entrix (Aug 2026). Expanding Q4 2026.
+        </div>
+        <div class="code-block mt-10" style="font-size:10px;line-height:1.7">
+<span class="comment">-- V4 direction</span>
+simulations.project_id  <span class="fn">NULL</span>     <span class="comment">← relaxed</span>
+simulations.backcast_id <span class="fn">NOT NULL</span>  <span class="comment">← new FK</span>
+
+<span class="comment">-- Blocking files to change:</span>
+<span class="comment">-- V02__basic_tables.sql (constraint)</span>
+<span class="comment">-- simulationsRepository.ts (INSERT list)</span>
+<span class="comment">-- simulations.ts (LegacySimulationCreate type)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-16" style="background:rgba(252,211,77,0.05)">
+      <div class="bold mb-8" style="color:var(--sqs)">What changes for asset-specific backcasting</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;line-height:1.6">
+        <div>
+          <div style="color:var(--esds);font-weight:700;margin-bottom:4px">Data model changes (ESDS)</div>
+          <div class="text-muted">• <code>simulations.project_id</code> → nullable<br>
+          • New <code>simulations.backcast_id</code> FK (nullable)<br>
+          • Check constraint: must have project_id OR backcast_id (not both null)<br>
+          • Migration: new Flyway V-file — never modify V02</div>
+        </div>
+        <div>
+          <div style="color:var(--flex);font-weight:700;margin-bottom:4px">API & flex-microservice changes</div>
+          <div class="text-muted">• Create simulation with <code>backcastId</code> instead of <code>projectId</code><br>
+          • Benchmark metadata needs asset config (site, technology, constraints)<br>
+          • Per-client tenant isolation for outputs<br>
+          • Automated monthly trigger (no manual Research step)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 3: INVESTMENT CASES
+══════════════════════════════════════════ -->
+<section class="section" id="s-ic">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(129,140,248,0.15);color:var(--ui)">Tab 1</div>
+    <h2>Investment Cases</h2>
+    <p>How a user request flows from the browser to a rendered chart. The key pattern: on-demand CSV generation with polling.</p>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-btn active" onclick="switchTab('ic','flow')">Data Flow</div>
+    <div class="tab-btn" onclick="switchTab('ic','model')">Data Model</div>
+    <div class="tab-btn" onclick="switchTab('ic','api')">API Calls</div>
+    <div class="tab-btn" onclick="switchTab('ic','workbook')">WorkbookConfig</div>
+  </div>
+
+  <div id="ic-flow" class="tab-content active">
+    <p class="text-sm text-muted mb-16">Animated flow of a user selecting an Investment Case. Watch the polling pattern — the API returns <code style="color:var(--flex)">HTTP 206</code> while ESDOS is generating the CSV, then <code style="color:var(--esdos)">HTTP 200</code> when ready.</p>
+    <div class="flow-diagram" id="ic-flow-diagram">
+      <div class="flow-node" style="border-color:var(--ui)">
+        <div class="fn-title" style="color:var(--ui)">Browser</div>
+        <div class="fn-sub">User selects IC</div>
+      </div>
+      <div class="flow-arrow http" style="position:relative;min-width:80px;">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">GET /data/internal</div>
+        <div class="flow-packet" style="background:var(--flex);color:var(--flex)"></div>
+      </div>
+      <div class="flow-node" style="border-color:var(--flex)">
+        <div class="fn-title" style="color:var(--flex)">flex-microservice</div>
+        <div class="fn-sub">checks S3 metadata</div>
+      </div>
+      <div class="flow-arrow s3">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">metadata.json?</div>
+      </div>
+      <div class="flow-node" style="border-color:var(--s3)">
+        <div class="fn-title" style="color:var(--s3)">S3</div>
+        <div class="fn-sub">metadata.json</div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:8px 0;font-size:12px;color:var(--muted)">↓ if NOT found → trigger generation</div>
+    <div class="flow-diagram">
+      <div class="flow-node" style="border-color:var(--flex)">
+        <div class="fn-title" style="color:var(--flex)">flex-microservice</div>
+        <div class="fn-sub">uploads config.json</div>
+      </div>
+      <div class="flow-arrow sqs" style="position:relative;min-width:80px;">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">SQS message</div>
+        <div class="flow-packet" style="background:var(--sqs);color:var(--sqs);animation-delay:0.3s"></div>
+      </div>
+      <div class="flow-node" style="border-color:var(--sqs)">
+        <div class="fn-title" style="color:var(--sqs)">FlexExplorerVisuals Queue</div>
+        <div class="fn-sub">{"workbook_storage_location": "..."}</div>
+      </div>
+      <div class="flow-arrow sqs" style="position:relative;min-width:60px;">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">triggers</div>
+        <div class="flow-packet" style="background:var(--sqs);animation-delay:0.6s"></div>
+      </div>
+      <div class="flow-node" style="border-color:var(--esdos)">
+        <div class="fn-title" style="color:var(--esdos)">ESDOS Lambda</div>
+        <div class="fn-sub">generates vis CSV</div>
+      </div>
+      <div class="flow-arrow s3">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">writes</div>
+      </div>
+      <div class="flow-node" style="border-color:var(--s3)">
+        <div class="fn-title" style="color:var(--s3)">S3</div>
+        <div class="fn-sub">visualisation-external.csv + metadata.json ✓</div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:8px 0;font-size:12px;color:var(--muted)">↓ browser polls until HTTP 200</div>
+    <div class="card" style="background:rgba(52,211,153,0.06);border-color:var(--esdos)">
+      <div class="text-sm" style="line-height:1.8">
+        <strong>The Polling Pattern:</strong> The browser calls <code style="color:var(--flex)">/data/internal</code> repeatedly (every ~2s).
+        The API checks S3 for <code>metadata.json</code>. Status <code style="color:var(--sqs)">"none"</code> → triggers generation + returns 206.
+        Status <code style="color:var(--esdos)">"success"</code> → streams the CSV back with 200.
+        Status <code style="color:var(--esdmr)">"failure"</code> → shows error.
+        Once the CSV exists in S3, future requests skip generation entirely.
+      </div>
+    </div>
+  </div>
+
+  <div id="ic-model" class="tab-content">
+    <div class="card-grid cols-2">
+      <div>
+        <div class="bold mb-8" style="color:var(--flex)">flex_scenarios table</div>
+        <div class="code-block">
+<span class="key">flex_scenario_uuid</span>  <span class="str">VARCHAR(36) PK</span>
+<span class="key">title</span>               <span class="str">"GBR Central Flex Cycle 3"</span>
+<span class="key">region</span>              <span class="str">"gbr"</span>
+<span class="key">price_zone</span>          <span class="str">"national"</span>
+<span class="key">sensitivity</span>         <span class="str">"Central"</span>
+<span class="key">prmf_cycle</span>          <span class="str">DATETIME</span>
+<span class="key">default_currency</span>    <span class="str">"gbp2024"</span>
+<span class="key">status</span>              <span class="str">ENUM('Draft','Published','Retired')</span>
+<span class="key">tenant</span>              <span class="str">"auroraer.com"</span>
+        </div>
+      </div>
+      <div>
+        <div class="bold mb-8" style="color:var(--ui)">investment_cases table</div>
+        <div class="code-block">
+<span class="key">investment_case_uuid</span>  <span class="str">VARCHAR(36) PK</span>
+<span class="key">flex_scenario_uuid</span>    <span class="str">FK → flex_scenarios</span>
+<span class="key">simulation_uuid</span>       <span class="str">VARCHAR(36)  ← Chronos sim ID</span>
+<span class="key">title</span>                 <span class="str">"2h 50MW GBR National"</span>
+<span class="key">config</span>                <span class="str">JSON  ← full sim config</span>
+<span class="key">status</span>                <span class="str">ENUM('Pending','Complete','Failed')</span>
+<span class="key">currency_code</span>         <span class="str">"gbp2024"</span>
+        </div>
+      </div>
+    </div>
+    <div class="card mt-16" style="background:rgba(251,146,60,0.05)">
+      <div class="text-sm text-muted" style="line-height:1.8">
+        <strong>Key relationship:</strong> Each <code>investment_case</code> has a <code>simulation_uuid</code> that points to a completed Chronos simulation in ESDS.
+        When someone views an IC, the flex-microservice uses that UUID to find the simulation outputs in S3 and trigger ESDOS to generate the visualisation CSV.
+      </div>
+    </div>
+  </div>
+
+  <div id="ic-api" class="tab-content">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="card" style="display:flex;align-items:center;gap:12px;">
+        <span class="pill" style="background:rgba(52,211,153,0.2);color:var(--esdos);font-size:11px;flex-shrink:0">GET</span>
+        <div>
+          <div class="text-sm bold">/v1/scenarios/all</div>
+          <div class="text-xs text-muted">All published flex scenarios for the user's regions. Cached in React Query.</div>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;">
+        <span class="pill" style="background:rgba(52,211,153,0.2);color:var(--esdos);font-size:11px;flex-shrink:0">GET</span>
+        <div>
+          <div class="text-sm bold">/v1/investment-cases/by-flex-scenario-id/{scenarioUuid}</div>
+          <div class="text-xs text-muted">All ICs for the selected scenario. Used to populate the IC list.</div>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;border-left:3px solid var(--flex)">
+        <span class="pill" style="background:rgba(52,211,153,0.2);color:var(--esdos);font-size:11px;flex-shrink:0">GET</span>
+        <div>
+          <div class="text-sm bold">/v1/scenarios/{uuid}/investmentCase/{icUuid}/data/internal</div>
+          <div class="text-xs text-muted">⭐ <strong>Main chart data endpoint.</strong> Returns 206 while generating, 200 when ready. Polling triggers ESDOS on first call.</div>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;">
+        <span class="pill" style="background:rgba(52,211,153,0.2);color:var(--esdos);font-size:11px;flex-shrink:0">GET</span>
+        <div>
+          <div class="text-sm bold">/v1/markets/by-flex-scenario-id/{scenarioUuid}</div>
+          <div class="text-xs text-muted">Chart market mapping — display names, ordering, colours for each market segment.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ic-workbook" class="tab-content">
+    <p class="text-sm text-muted mb-16">The <strong>WorkbookConfig</strong> is the JSON uploaded to S3 before the SQS message is sent. It tells ESDOS exactly what to generate.</p>
+    <div class="code-block">
+{
+  <span class="key">"workbook_uuid"</span>: <span class="str">"abc-123"</span>,
+  <span class="key">"output_format"</span>: <span class="str">"WORKBOOK_FORMAT_VISUALISATION_EXTERNAL"</span>,
+  <span class="key">"simulations"</span>: [{
+    <span class="key">"simulation_id"</span>: <span class="str">"sim-xyz"</span>,
+    <span class="key">"output_directory"</span>: <span class="str">"production/output/auroraer.com/sim-xyz/"</span>,
+    <span class="key">"input_directory"</span>:  <span class="str">"production/input/auroraer.com/sim-xyz/"</span>,
+    <span class="key">"forecast_start"</span>:   <span class="str">"2024-01-01"</span>,
+    <span class="key">"forecast_end"</span>:     <span class="str">"2053-12-31"</span>
+  }],
+  <span class="key">"currency_map"</span>: { <span class="str">"gbp"</span>: { <span class="str">"inflation_factor"</span>: 1.025 } },
+  <span class="key">"basis"</span>: <span class="str">"grid"</span>,          <span class="comment">// grid | component | absolute</span>
+  <span class="key">"normalisation"</span>: <span class="str">"kW"</span>,    <span class="comment">// per-kW values</span>
+  <span class="key">"chart_mapping_location"</span>: <span class="str">"production/config/chartMapping.csv"</span>
+}
+    </div>
+    <div class="card mt-16" style="background:rgba(252,211,77,0.05)">
+      <div class="text-sm text-muted" style="line-height:1.8">
+        <strong>S3 path where config.json is written:</strong><br>
+        <code style="color:var(--s3)">{universe}/investmentCases/{tenant}/{scenarioUuid}/{icUuid}/{currency}/{basis}/config.json</code><br><br>
+        ESDOS reads <code>config.json</code> from this path, generates the CSV, and writes back to the same prefix:
+        <code style="color:var(--esdos)">visualisation-external-{uuid}.csv</code> + <code style="color:var(--esdos)">metadata.json</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 4: BACKCAST BENCHMARKS
+══════════════════════════════════════════ -->
+<section class="section" id="s-bm">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(251,146,60,0.15);color:var(--esds)">Tab 2</div>
+    <h2>Backcast Benchmarks</h2>
+    <p>Backward-looking. A benchmark = many Chronos simulations, each covering one calendar month. Publishing triggers ESDOS for every month.</p>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-btn active" onclick="switchTab('bm','flow')">Publish Flow</div>
+    <div class="tab-btn" onclick="switchTab('bm','model')">Data Model</div>
+    <div class="tab-btn" onclick="switchTab('bm','s3')">S3 Layout</div>
+  </div>
+
+  <div id="bm-flow" class="tab-content active">
+    <div class="card mb-16" style="background:rgba(251,146,60,0.05)">
+      <div class="text-sm" style="line-height:1.8">
+        Adding a simulation to a 36-month benchmark sends <strong style="color:var(--sqs)">72 SQS messages</strong> (36 months × 2 granularities: monthly + daily).
+        ESDOS processes up to 10 concurrently. The whole batch takes ~5–10 minutes.
+      </div>
+    </div>
+
+    <!-- Mini timeline -->
+    <div class="card-grid cols-3" style="gap:0">
+      <div class="card" style="border-radius:12px 0 0 12px;border-right:none;border-color:var(--esds)">
+        <div style="color:var(--esds);font-weight:700;margin-bottom:8px">① Create</div>
+        <div class="text-xs text-muted" style="line-height:1.6">
+          <code>POST /v1/benchmarks</code><br>
+          DB row created<br>
+          <code style="color:var(--esds)">status = 'Draft'</code>
+        </div>
+      </div>
+      <div class="card" style="border-radius:0;border-color:var(--sqs)">
+        <div style="color:var(--sqs);font-weight:700;margin-bottom:8px">② Add Data</div>
+        <div class="text-xs text-muted" style="line-height:1.6">
+          <code>PUT /v1/benchmarks/{id}/add</code><br>
+          Copy ESDS → S3<br>
+          Slice by month<br>
+          Send 72× SQS<br>
+          ESDOS generates CSVs
+        </div>
+      </div>
+      <div class="card" style="border-radius:0 12px 12px 0;border-left:none;border-color:var(--esdos)">
+        <div style="color:var(--esdos);font-weight:700;margin-bottom:8px">③ Publish</div>
+        <div class="text-xs text-muted" style="line-height:1.6">
+          <code>PATCH /v1/benchmarks/{id}/status</code><br>
+          <code style="color:var(--esdos)">status = 'Published'</code><br>
+          Visible to all users
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-24">
+      <div class="bold mb-8">How a month is sliced and prepared</div>
+      <div class="flow-diagram">
+        <div class="flow-node" style="border-color:var(--s3)">
+          <div class="fn-title" style="color:var(--s3)">ESDS S3</div>
+          <div class="fn-sub">site_out_monthly.csv<br>(full 30-year sim)</div>
+        </div>
+        <div class="flow-arrow s3" style="position:relative;min-width:70px;">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">filter to Jan 2022</div>
+          <div class="flow-packet" style="background:var(--s3);animation-delay:0.2s"></div>
+        </div>
+        <div class="flow-node" style="border-color:var(--flex)">
+          <div class="fn-title" style="color:var(--flex)">flex-microservice</div>
+          <div class="fn-sub">trims + copies<br>per month</div>
+        </div>
+        <div class="flow-arrow s3" style="position:relative;min-width:70px;">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">writes sliced CSVs</div>
+          <div class="flow-packet" style="background:var(--s3);animation-delay:0.4s"></div>
+        </div>
+        <div class="flow-node" style="border-color:var(--s3)">
+          <div class="fn-title" style="color:var(--s3)">Flex S3</div>
+          <div class="fn-sub">benchmarks/{id}/2022/01/<br>chronosSimulations/.../</div>
+        </div>
+        <div class="flow-arrow sqs" style="position:relative;min-width:60px;">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">SQS message</div>
+          <div class="flow-packet" style="background:var(--sqs);animation-delay:0.6s"></div>
+        </div>
+        <div class="flow-node" style="border-color:var(--esdos)">
+          <div class="fn-title" style="color:var(--esdos)">ESDOS</div>
+          <div class="fn-sub">vis CSV →<br>S3 ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-16" style="background:rgba(252,211,77,0.05)">
+      <div class="text-sm text-muted" style="line-height:1.8">
+        ⚠️ <strong>ESDOS quirk:</strong> ESDOS requires <code>site_out_monthly.csv</code>, <code>site_out_quarterly.csv</code>, AND <code>site_out_yearly.csv</code>
+        for each simulation folder — even for backcasts where only monthly data exists.
+        The flex-microservice solves this by <strong>copying the monthly CSV to all three filenames</strong>.
+      </div>
+    </div>
+  </div>
+
+  <div id="bm-model" class="tab-content">
+    <div class="card-grid cols-2">
+      <div>
+        <div class="bold mb-8" style="color:var(--esds)">benchmarks table</div>
+        <div class="code-block">
+<span class="key">benchmark_uuid</span>        <span class="str">VARCHAR(36) PK</span>
+<span class="key">title</span>                 <span class="str">"GBR 2h Q4 2024"</span>
+<span class="key">region</span>                <span class="str">"gbr"</span>
+<span class="key">price_zone</span>            <span class="str">"national"</span>
+<span class="key">battery_duration</span>      <span class="str">2</span>
+<span class="key">base_currency_code</span>    <span class="str">"gbp2024"</span>
+<span class="key">status</span>                <span class="str">ENUM('Draft','Published','Retired')</span>
+<span class="key">first_release_month</span>   <span class="str">DATE  2022-01-01</span>
+<span class="key">latest_release_month</span>  <span class="str">DATE  2024-12-01</span>
+        </div>
+      </div>
+      <div>
+        <div class="bold mb-8" style="color:var(--sqs)">benchmarks_metadata table</div>
+        <div class="code-block">
+<span class="key">id</span>                  <span class="str">VARCHAR(36) PK</span>
+<span class="key">benchmark_uuid</span>      <span class="str">FK → benchmarks</span>
+<span class="key">simulation_uuid</span>     <span class="str">VARCHAR(36) ← Chronos sim</span>
+<span class="key">start_date</span>          <span class="str">DATE  2022-01-01</span>
+<span class="key">end_date</span>            <span class="str">DATE  2022-01-31</span>
+<span class="key">chart_mapping_version</span> <span class="str">VARCHAR</span>
+<span class="key">is_deleted</span>          <span class="str">TINYINT(1)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bm-s3" class="tab-content">
+    <div class="code-block" style="font-size:11px;line-height:1.8">
+<span class="comment">// Flex Explorer bucket: aer-flex-explorer-microservice-{universe}</span>
+
+<span class="key">production/benchmarks/auroraer.com/{benchmarkUuid}/</span>
+  <span class="str">2022/01/</span>
+    config.json                          <span class="comment">← WorkbookConfig for ESDOS (monthly)</span>
+    visualisation-external-{uuid}.csv   <span class="comment">← written by ESDOS ✓</span>
+    metadata.json                        <span class="comment">← {"status":"success"}</span>
+    chronosSimulations/{simUuid}/
+      site_out_monthly.csv               <span class="comment">← Jan 2022 rows only</span>
+      site_out_quarterly.csv             <span class="comment">← copy of monthly (ESDOS req.)</span>
+      site_out_yearly.csv                <span class="comment">← copy of monthly (ESDOS req.)</span>
+      site_out_daily.csv                 <span class="comment">← Jan 2022 daily rows</span>
+      config/config.external.simulation.json
+      metadata/metadata.external.simulation.json
+    daily/
+      config.json                        <span class="comment">← WorkbookConfig for daily granularity</span>
+      visualisation-external-{uuid}.csv  <span class="comment">← daily vis CSV</span>
+  <span class="str">2022/02/</span>
+    <span class="comment">... same structure for each month ...</span>
+  <span class="str">2024/12/</span>
+    <span class="comment">... last month</span>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 5: REAL PERFORMANCE (LEADERBOARDS)
+══════════════════════════════════════════ -->
+<section class="section" id="s-lb">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(167,139,250,0.15);color:var(--eos)">Tab 3</div>
+    <h2>Real Performance Benchmarks</h2>
+    <p>Real metered data from actual batteries — no Chronos involved. Powered by EOS parquet files queried with DuckDB directly inside the Lambda.</p>
+  </div>
+
+  <div class="card mb-16" style="background:rgba(167,139,250,0.05);border-color:var(--eos)">
+    <div class="text-sm" style="line-height:1.8">
+      <strong>The key insight:</strong> This tab has nothing to do with Chronos simulations.
+      The data pipeline is: <strong>Battery meters → Scrapers → S3 Parquet → Redshift (HDM ETL) → S3 Parquet (eos-data-uploader) → DuckDB in Lambda → Browser</strong>.
+      DuckDB reads parquet files directly from S3 — no database query at serve time.
+    </div>
+  </div>
+
+  <!-- Full pipeline -->
+  <div class="bold mb-16">The Real Data Pipeline</div>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="flow-node" style="border-color:var(--hdm);min-width:160px;text-align:center">
+        <div class="fn-title" style="color:var(--hdm)">Battery Meters</div>
+        <div class="fn-sub">Raw metered data</div>
+      </div>
+      <div style="font-size:18px;color:var(--muted)">→</div>
+      <div class="flow-node" style="border-color:var(--hdm);min-width:160px;text-align:center">
+        <div class="fn-title" style="color:var(--hdm)">HDM</div>
+        <div class="fn-sub">S3 parquet → Redshift<br>historic._1d_unit_ancillary</div>
+      </div>
+      <div style="font-size:18px;color:var(--muted)">→</div>
+      <div class="flow-node" style="border-color:var(--eos);min-width:160px;text-align:center">
+        <div class="fn-title" style="color:var(--eos)">eos-data-uploader</div>
+        <div class="fn-sub">flex_unit_breakdown jobs<br>→ S3 parquet</div>
+      </div>
+      <div style="font-size:18px;color:var(--muted)">→</div>
+      <div class="flow-node" style="border-color:var(--flex);min-width:180px;text-align:center">
+        <div class="fn-title" style="color:var(--flex)">flex-microservice</div>
+        <div class="fn-sub">DuckDB reads parquet<br>→ streams CSV</div>
+      </div>
+      <div style="font-size:18px;color:var(--muted)">→</div>
+      <div class="flow-node" style="border-color:var(--ui);min-width:120px;text-align:center">
+        <div class="fn-title" style="color:var(--ui)">Browser</div>
+        <div class="fn-sub">Bar / timeseries chart</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-grid cols-2 mt-24">
+    <div class="card">
+      <div class="bold mb-8" style="color:var(--eos)">S3 Parquet Structure</div>
+      <div class="code-block" style="font-size:11px;line-height:1.8">
+<span class="comment">// aer-eos-data-downloader-{universe}</span>
+<span class="key">v1/files/historic/gbr/flex-unit-breakdown/</span>
+  meta.json                <span class="comment">← lists available years</span>
+  <span class="str">1d/</span>
+    <span class="str">2023/</span>
+      gbr_flex-unit-breakdown_1d.parquet
+      gbr_flex-unit-breakdown_1d.csv
+      <span class="str">01/</span>  <span class="comment">← monthly partition</span>
+        gbr_flex-unit-breakdown_1d.parquet
+      <span class="str">02/</span>
+        ...
+    <span class="str">2024/</span>
+      ...
+      </div>
+    </div>
+    <div class="card">
+      <div class="bold mb-8" style="color:var(--flex)">DuckDB Query (inside Lambda)</div>
+      <div class="code-block" style="font-size:11px;line-height:1.8">
+<span class="comment">// leaderboardService.ts</span>
+<span class="fn">SELECT</span> *
+<span class="fn">FROM</span> <span class="fn">read_parquet</span>(<span class="str">
+  's3://aer-eos-data-downloader-prod/
+   v1/files/historic/gbr/
+   flex-unit-breakdown/1d/2024/**/*.parquet'</span>)
+<span class="fn">WHERE</span> local_date <span class="fn">BETWEEN</span>
+  <span class="str">'2024-01-01'</span> <span class="fn">AND</span> <span class="str">'2024-12-31'</span>
+<span class="comment">-- No database needed at query time!</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-16">
+    <div class="bold mb-12">Data columns per battery per day</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">local_date</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">unit (battery name)</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">optimiser</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">registered_party</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">battery_duration</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">trading_market</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">cashflow_charge (GBP/kW)</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">cashflow_discharge (GBP/kW)</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">volume_charge (MWh)</span>
+      <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">storage_capacity (MW)</span>
+    </div>
+  </div>
+
+  <div class="card mt-16" style="background:rgba(96,165,250,0.05)">
+    <div class="bold mb-8">Chunked Parallel Fetching (up to 12 months)</div>
+    <div class="text-sm text-muted" style="line-height:1.8">
+      The UI always fetches a "latest 30 days" anchor first (<code>GET /latest?window=30d</code>).
+      For longer date ranges, it fires <strong>parallel chunk queries</strong> of max 6 months each.
+      Results are deduplicated by <code>local_date|unit|trading_market</code> key and held in client memory.
+      The scrubber slides over the full dataset without re-fetching.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 6: SIMULATION ENGINE
+══════════════════════════════════════════ -->
+<section class="section" id="s-sim">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(248,113,113,0.15);color:var(--esdmr)">Engine</div>
+    <h2>Simulation Engine: ESDS + ESDMR</h2>
+    <p>ESDS orchestrates, ESDMR executes. Click states in the machine below to see what happens at each stage.</p>
+  </div>
+
+  <div class="card mb-16">
+    <div class="bold mb-16">Simulation State Machine — click a state to explore</div>
+    <div class="state-machine" id="state-machine" style="gap:0;justify-content:center;flex-wrap:nowrap;">
+      <div class="state-node" id="st-NotLaunched" style="border-color:var(--muted);color:var(--muted)" onclick="selectState('NotLaunched')">
+        <div>Not</div><div>Launched</div>
+      </div>
+      <div class="state-arrow" id="sa-1"></div>
+      <div class="state-node" id="st-Preparing" style="border-color:var(--esds);color:var(--esds)" onclick="selectState('Preparing')">
+        <div>Preparing</div>
+      </div>
+      <div class="state-arrow" id="sa-2"></div>
+      <div class="state-node" id="st-Running" style="border-color:var(--esdmr);color:var(--esdmr)" onclick="selectState('Running')">
+        <div>Running</div>
+      </div>
+      <div class="state-arrow" id="sa-3"></div>
+      <div class="state-node" id="st-Aggregating" style="border-color:var(--eos);color:var(--eos)" onclick="selectState('Aggregating')">
+        <div>Aggregating</div>
+      </div>
+      <div class="state-arrow" id="sa-4"></div>
+      <div class="state-node" id="st-Complete" style="border-color:var(--esdos);color:var(--esdos)" onclick="selectState('Complete')">
+        <div>Complete</div>
+      </div>
+    </div>
+    <div id="state-detail" class="card mt-16" style="background:rgba(251,146,60,0.06);display:none">
+      <div id="state-detail-content"></div>
+    </div>
+  </div>
+
+  <div class="card-grid cols-2">
+    <div class="card">
+      <div class="bold mb-8" style="color:var(--esds)">7 Lambda Functions in ESDS</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+        <div style="padding:8px;background:var(--card2);border-radius:6px;">
+          <div style="color:var(--flex);font-weight:700">AppExpressFunction + ApiExpressFunction</div>
+          <div class="text-muted">REST API — all HTTP routes. 2048 MB, 29s timeout.</div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:6px;">
+          <div style="color:var(--esds);font-weight:700">ProcessingLoopFunction ⏰ every 15 min</div>
+          <div class="text-muted">Submits ECS tasks. Advances state machine. 900s timeout.</div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:6px;">
+          <div style="color:var(--muted);font-weight:700">CleaningLoopFunction ⏰ every 10 min</div>
+          <div class="text-muted">Deletes old S3 outputs to control storage costs.</div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:6px;">
+          <div style="color:var(--muted);font-weight:700">DeleteOldEventsLoopFunction ⏰ every 2 min</div>
+          <div class="text-muted">Purges old ECS events from DB. 35s timeout, 128 MB.</div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:6px;">
+          <div style="color:var(--sqs);font-weight:700">SQSEventMonitoringFunction ← SQS</div>
+          <div class="text-muted">ECS Task State Change → DB. Batch size 10.</div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:6px;">
+          <div style="color:var(--eb);font-weight:700">OriginIntegrationFunction ← SNS/SQS</div>
+          <div class="text-muted">Copies scenario data from Origin on release. Batch size 1.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="bold mb-8" style="color:var(--esdmr)">ESDMR Docker Images (ECR)</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--card2);border-radius:6px;">
+          <span style="color:var(--esdmr);font-weight:700">dispatch-model</span>
+          <span class="text-muted">Python 3.9 · MIP 1.14 · Default</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--card2);border-radius:6px;">
+          <span style="color:var(--esdmr)">py3.9_gurobi_v1</span>
+          <span class="text-muted">Python 3.9 · Gurobi 12.0.3</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--card2);border-radius:6px;">
+          <span style="color:var(--esdmr)">pantheon_v1</span>
+          <span class="text-muted">Python 3.13 · MIP · Pantheon</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--card2);border-radius:6px;">
+          <span style="color:var(--muted)">py3.11_v1 / py3.12_v1</span>
+          <span class="text-muted">Upgrade paths</span>
+        </div>
+      </div>
+      <div class="bold mb-8 mt-16" style="color:var(--esdmr)">4 Execution Modes</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
+        <div style="padding:8px;background:rgba(248,113,113,0.08);border-radius:6px;border-left:3px solid var(--esdmr)">
+          <strong>PREPARING</strong> — downloads code + inputs, runs prepare_data(), uploads price data
+        </div>
+        <div style="padding:8px;background:rgba(248,113,113,0.08);border-radius:6px;border-left:3px solid var(--esdmr)">
+          <strong>RUN_FOR_YEARS</strong> — 1 task = 1 year; ESDS fans out N tasks in parallel
+        </div>
+        <div style="padding:8px;background:rgba(248,113,113,0.08);border-radius:6px;border-left:3px solid var(--esdmr)">
+          <strong>AGGREGATE</strong> — collects all year outputs → site_out_monthly/daily/yearly.csv
+        </div>
+        <div style="padding:8px;background:rgba(248,113,113,0.08);border-radius:6px;border-left:3px solid var(--esdmr)">
+          <strong>SERIES_DISPATCH</strong> — intraday granularity, requires production_profile.json
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-16" style="background:rgba(251,146,60,0.05)">
+    <div class="bold mb-8">How ECS task completion flows back to ESDS</div>
+    <div class="flow-diagram">
+      <div class="flow-node" style="border-color:var(--esdmr);min-width:100px">
+        <div class="fn-title" style="color:var(--esdmr)">ECS task</div>
+        <div class="fn-sub">exits (code 0)</div>
+      </div>
+      <div class="flow-arrow" style="position:relative;min-width:60px;">
+        <div class="arrow-line" style="background:var(--eb)"></div>
+        <div class="arrow-label">EventBridge</div>
+        <div class="flow-packet" style="background:var(--eb)"></div>
+      </div>
+      <div class="flow-node" style="border-color:var(--sqs)">
+        <div class="fn-title" style="color:var(--sqs)">SQS FIFO</div>
+        <div class="fn-sub">ecs-events.fifo</div>
+      </div>
+      <div class="flow-arrow sqs" style="position:relative;min-width:60px;">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">batch=10</div>
+        <div class="flow-packet" style="background:var(--sqs);animation-delay:0.4s"></div>
+      </div>
+      <div class="flow-node" style="border-color:var(--lambda)">
+        <div class="fn-title" style="color:var(--lambda)">SQSEventMonitoringFn</div>
+        <div class="fn-sub">→ DB insert</div>
+      </div>
+      <div class="flow-arrow" style="position:relative;min-width:60px;">
+        <div class="arrow-line" style="background:var(--mysql)"></div>
+        <div class="arrow-label">reads on next cycle</div>
+      </div>
+      <div class="flow-node" style="border-color:var(--esds)">
+        <div class="fn-title" style="color:var(--esds)">ProcessingLoop</div>
+        <div class="fn-sub">advances state</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 7: ESDOS OUTPUT PIPELINE
+══════════════════════════════════════════ -->
+<section class="section" id="s-esdos">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(52,211,153,0.15);color:var(--esdos)">Pipeline</div>
+    <h2>Output Pipeline: ESDOS</h2>
+    <p>ESDOS converts raw Chronos CSVs into chart-ready visualisation files. It applies 3 transforms in sequence.</p>
+  </div>
+
+  <div class="card-grid cols-2">
+    <div class="card">
+      <div class="bold mb-12" style="color:var(--esdos)">The 3 Converters (applied in order)</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="padding:12px;background:rgba(52,211,153,0.06);border-radius:8px;border-left:3px solid var(--esdos)">
+          <div style="font-weight:700;margin-bottom:4px">① Basis Converter</div>
+          <div class="text-xs text-muted" style="line-height:1.6">
+            Converts between <strong>grid</strong> (per grid MW), <strong>component</strong> (per inverter MW), and <strong>absolute</strong> (raw MWh/GBP).
+            Set by the <code>basis</code> field in WorkbookConfig.
+          </div>
+        </div>
+        <div style="padding:12px;background:rgba(52,211,153,0.06);border-radius:8px;border-left:3px solid var(--esdos)">
+          <div style="font-weight:700;margin-bottom:4px">② Currency Converter</div>
+          <div class="text-xs text-muted" style="line-height:1.6">
+            Applies inflation factors. E.g., "GBP 2024 real terms" = multiply by 1.025/yr vs base year.
+            Uses the <code>currency_map</code> from WorkbookConfig.
+          </div>
+        </div>
+        <div style="padding:12px;background:rgba(52,211,153,0.06);border-radius:8px;border-left:3px solid var(--esdos)">
+          <div style="font-weight:700;margin-bottom:4px">③ Normalisation Converter</div>
+          <div class="text-xs text-muted" style="line-height:1.6">
+            Converts absolute values → per-kW. Almost always <code>normalisation: "kW"</code> for Flexplorer.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="bold mb-12" style="color:var(--sqs)">The 4 SQS-Triggered Lambdas</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+        <div style="padding:10px;background:rgba(52,211,153,0.08);border-radius:8px;border:1px solid var(--esdos)">
+          <div style="color:var(--esdos);font-weight:700">FlexExplorerVisualisationsDFunction</div>
+          <div class="text-muted">← FlexExplorerVisuals-Queue · max 10 concurrent</div>
+          <div class="text-muted">This is Flexplorer's Lambda. Writes to Flex Explorer S3 bucket.</div>
+        </div>
+        <div style="padding:10px;background:var(--card2);border-radius:8px;">
+          <div style="font-weight:700">WorkbookDFunction</div>
+          <div class="text-muted">← WorkBook-Queue · max 19 concurrent · generates Excel .xlsx</div>
+        </div>
+        <div style="padding:10px;background:var(--card2);border-radius:8px;">
+          <div style="font-weight:700">QaWorkbookDFunction</div>
+          <div class="text-muted">← QaWorkBook-Queue · QA Excel workbooks</div>
+        </div>
+        <div style="padding:10px;background:var(--card2);border-radius:8px;">
+          <div style="font-weight:700">EnergyStorageVisualisationsDFunction</div>
+          <div class="text-muted">← EnergyStorageVisuals-Queue · for Chronos product (not Flex)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-16">
+    <div class="bold mb-8">Output CSV format (what the chart reads)</div>
+    <div class="code-block" style="font-size:11px;line-height:1.8">
+<span class="comment">// Row 0: headers</span>
+local_year  ,  Total Project Cashflow  ,  DC High  ,  FFR  ,  Wholesale  ,  ...
+<span class="comment">// Row 1: units</span>
+           ,  GBP/kW/year             ,  GBP/kW/year  ,  ...
+<span class="comment">// Row 2+: data (one row per year × market)</span>
+2022       ,  62.4                    ,  18.2     ,  8.1  ,  12.3       ,  ...
+2023       ,  58.1                    ,  16.9     ,  7.8  ,  11.5       ,  ...
+    </div>
+    <div class="text-xs text-muted mt-8">
+      The UI parses this with <code>papaparse</code>. Row 1 (units) is stripped before charting. Each column = one market segment = one stacked bar layer.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 8: QUEUES
+══════════════════════════════════════════ -->
+<section class="section" id="s-queues">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(252,211,77,0.15);color:var(--sqs)">Infrastructure</div>
+    <h2>Queues: The Nervous System</h2>
+    <p>Every SQS queue is a handoff between services. All Flexplorer SQS messages carry the same payload: <code>{"workbook_storage_location":"..."}</code></p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <div>
+      <div class="bold mb-10" style="color:var(--flex)">Queues used by flex-explorer-microservice</div>
+      <div class="queue-row">
+        <div style="font-size:11px;color:var(--muted);width:80px;text-align:right;flex-shrink:0">SENDS →</div>
+        <div class="queue-box">
+          <div class="q-name">energy-storage-dispatch-output-service-{universe}-FlexExplorerVisuals-Queue</div>
+          <div class="q-stats">Visibility: 900s · maxReceiveCount: 5 · KMS encrypted · DLQ after 5 failures</div>
+        </div>
+        <div class="queue-msg" style="color:var(--sqs)">{"workbook_storage_location": "..."}</div>
+        <div style="font-size:11px;color:var(--muted)">→ ESDOS processes → generates vis CSV</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="bold mb-10" style="color:var(--esds)">Queues used by ESDS</div>
+      <div class="queue-row">
+        <div style="font-size:11px;color:var(--muted);width:80px;text-align:right;flex-shrink:0">SENDS →</div>
+        <div class="queue-box">
+          <div class="q-name">energy-storage-dispatch-output-service-{universe}-WorkBook-Queue</div>
+          <div class="q-stats">→ ESDOS WorkbookDFunction → generates Excel .xlsx</div>
+        </div>
+      </div>
+      <div class="queue-row">
+        <div style="font-size:11px;color:var(--muted);width:80px;text-align:right;flex-shrink:0">SENDS →</div>
+        <div class="queue-box">
+          <div class="q-name">energy-storage-dispatch-output-service-{universe}-EnergyStorageVisuals-Queue</div>
+          <div class="q-stats">→ ESDOS EnergyStorageVisualisationsDFunction → backcast vis CSVs (Chronos product)</div>
+        </div>
+      </div>
+      <div class="queue-row">
+        <div style="font-size:11px;color:var(--muted);width:80px;text-align:right;flex-shrink:0">MANAGES</div>
+        <div class="queue-box" style="border-color:var(--eb)">
+          <div class="q-name" style="color:var(--eb)">{StackName}-ecs-events.fifo (FIFO)</div>
+          <div class="q-stats">EventBridge → SQS FIFO → SQSEventMonitoringFunction → DB · Tracks ECS task state changes</div>
+        </div>
+      </div>
+      <div class="queue-row">
+        <div style="font-size:11px;color:var(--muted);width:80px;text-align:right;flex-shrink:0">MANAGES</div>
+        <div class="queue-box" style="border-color:var(--eb)">
+          <div class="q-name" style="color:var(--eb)">{StackName}-origin (Standard)</div>
+          <div class="q-stats">SNS topic Scenarios-{Universe} → OriginIntegrationFunction · Copies scenario data on release</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="background:rgba(252,211,77,0.05)">
+      <div class="bold mb-8">Key Queue Behaviours</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;">
+        <div>⏱ <strong>Visibility timeout = 900s</strong>. If ESDOS crashes, the message reappears after 15 min for retry.</div>
+        <div>🔁 <strong>maxReceiveCount = 5</strong>. After 5 failed attempts → message goes to DLQ. CloudWatch alarm fires on any DLQ message.</div>
+        <div>🗑 <strong>ESDOS failure handling</strong>: for known non-retryable errors (e.g. LegacyWorkbookNotSupported), ESDOS <em>manually deletes</em> the SQS message before writing failure metadata.json. This prevents DLQ clutter.</div>
+        <div>📋 <strong>FIFO queue</strong>: The ecs-events.fifo queue preserves order and deduplicates ECS state changes — critical for the simulation state machine.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 9: S3 STRUCTURE
+══════════════════════════════════════════ -->
+<section class="section" id="s-s3">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(96,165,250,0.15);color:var(--s3)">Storage</div>
+    <h2>S3: The Filing Cabinet</h2>
+    <p>Expand the buckets below to explore every key path. Click a file to see which service writes it and what format it's in.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Bucket 1 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;" onclick="toggleTree('t1')">
+        <span style="color:var(--s3);font-size:16px">🪣</span>
+        <span style="color:var(--s3);font-weight:700">aer-energy-storage-dispatch-{universe}</span>
+        <span class="pill" style="background:rgba(251,146,60,0.15);color:var(--esds)">Owner: ESDS</span>
+        <span style="margin-left:auto;color:var(--muted)" id="t1-arrow">▼</span>
+      </div>
+      <div id="t1" class="tree-root">
+        <div class="tree-item" onclick="treeClick('esds-input')">
+          <span class="tree-toggle">▶</span>
+          <span class="tree-icon">📁</span>
+          <span class="tree-label dir">{universe}/input/{tenant}/{simulationId}/</span>
+        </div>
+        <div id="esds-input" style="display:none" class="tree-children">
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">config/config.external.simulation.json</span><span class="tree-badge" style="background:rgba(251,146,60,0.15);color:var(--esds)">written by ESDS</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">config/config.internal.dispatch.json</span><span class="tree-badge" style="background:rgba(251,146,60,0.15);color:var(--esds)">NOT sent to model</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">metadata/metadata.external.simulation.json</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">data/*.csv.gz</span><span class="tree-badge" style="background:rgba(248,113,113,0.15);color:var(--esdmr)">written by PREPARING</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">production_profile.json</span><span class="tree-badge" style="background:rgba(248,113,113,0.15);color:var(--esdmr)">triggers SERIES_DISPATCH</span></div>
+        </div>
+        <div class="tree-item" onclick="treeClick('esds-output')">
+          <span class="tree-toggle">▶</span>
+          <span class="tree-icon">📁</span>
+          <span class="tree-label dir">{universe}/output/{tenant}/{simulationId}/</span>
+        </div>
+        <div id="esds-output" style="display:none" class="tree-children">
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">site_out_monthly.csv / .parquet</span><span class="tree-badge" style="background:rgba(248,113,113,0.15);color:var(--esdmr)">AGGREGATE writes · Flexplorer reads</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">site_out_daily.csv / .parquet</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">site_out_yearly.csv / .parquet</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">site_out_quarterly.csv / .parquet</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">site_out_yearly_financial.csv</span><span class="tree-badge" style="background:rgba(96,165,250,0.15);color:var(--s3)">AUS only</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">meta.json</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📁</span><span class="tree-label dir">{year}/</span><span class="tree-badge" style="background:rgba(248,113,113,0.15);color:var(--esdmr)">per-year outputs (RUN_FOR_YEARS)</span></div>
+        </div>
+        <div class="tree-item" onclick="treeClick('esds-bc')">
+          <span class="tree-toggle">▶</span>
+          <span class="tree-icon">📁</span>
+          <span class="tree-label dir">{universe}/backcasts/{tenant}/{backcastId}/</span>
+        </div>
+        <div id="esds-bc" style="display:none" class="tree-children">
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📁</span><span class="tree-label dir">{YYYY}/{MM}/chronosSimulations/{simId}/</span></div>
+          <div style="padding-left:36px" class="text-xs text-muted">site_out_monthly/quarterly/yearly/daily.csv (sliced to that month)</div>
+          <div class="tree-item" style="padding-top:4px"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">{YYYY}/{MM}/config.json</span><span class="tree-badge" style="background:rgba(252,211,77,0.15);color:var(--sqs)">WorkbookConfig → SQS</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">{YYYY}/{MM}/daily/config.json</span><span class="tree-badge" style="background:rgba(252,211,77,0.15);color:var(--sqs)">daily WorkbookConfig → SQS</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bucket 2 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;" onclick="toggleTree('t2')">
+        <span style="color:var(--s3);font-size:16px">🪣</span>
+        <span style="color:var(--s3);font-weight:700">aer-flex-explorer-microservice-{universe}</span>
+        <span class="pill" style="background:rgba(34,211,238,0.15);color:var(--flex)">Owner: flex-microservice</span>
+        <span style="margin-left:auto;color:var(--muted)" id="t2-arrow">▼</span>
+      </div>
+      <div id="t2" class="tree-root">
+        <div class="tree-item" onclick="treeClick('flex-ic')">
+          <span class="tree-toggle">▶</span><span class="tree-icon">📁</span>
+          <span class="tree-label dir">{universe}/investmentCases/{tenant}/{scenarioId}/{icId}/{currency}/{basis}/</span>
+        </div>
+        <div id="flex-ic" style="display:none" class="tree-children">
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">config.json</span><span class="tree-badge" style="background:rgba(34,211,238,0.15);color:var(--flex)">flex-microservice writes before SQS</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">visualisation-external-{uuid}.csv</span><span class="tree-badge" style="background:rgba(52,211,153,0.15);color:var(--esdos)">ESDOS writes ← chart data</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">metadata.json</span><span class="tree-badge" style="background:rgba(52,211,153,0.15);color:var(--esdos)">{status: "success"/"failure"}</span></div>
+        </div>
+        <div class="tree-item" onclick="treeClick('flex-bm')">
+          <span class="tree-toggle">▶</span><span class="tree-icon">📁</span>
+          <span class="tree-label dir">{universe}/benchmarks/{tenant}/{benchmarkId}/{YYYY}/{MM}/</span>
+        </div>
+        <div id="flex-bm" style="display:none" class="tree-children">
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">config.json</span><span class="tree-badge" style="background:rgba(34,211,238,0.15);color:var(--flex)">monthly WorkbookConfig</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">visualisation-external-{uuid}.csv</span><span class="tree-badge" style="background:rgba(52,211,153,0.15);color:var(--esdos)">monthly chart data</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📁</span><span class="tree-label dir">daily/config.json + visualisation-external-{uuid}.csv</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📁</span><span class="tree-label dir">chronosSimulations/{simId}/site_out_*.csv</span></div>
+        </div>
+        <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">{universe}/config/chartMapping.csv</span><span class="tree-badge" style="background:rgba(252,211,77,0.15);color:var(--sqs)">market display names</span></div>
+      </div>
+    </div>
+
+    <!-- Bucket 3 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;" onclick="toggleTree('t3')">
+        <span style="color:var(--s3);font-size:16px">🪣</span>
+        <span style="color:var(--s3);font-weight:700">aer-eos-data-downloader-{universe}</span>
+        <span class="pill" style="background:rgba(167,139,250,0.15);color:var(--eos)">Owner: eos-data-uploader</span>
+        <span style="margin-left:auto;color:var(--muted)" id="t3-arrow">▼</span>
+      </div>
+      <div id="t3" class="tree-root">
+        <div class="tree-item" onclick="treeClick('eos-flex')">
+          <span class="tree-toggle">▶</span><span class="tree-icon">📁</span>
+          <span class="tree-label dir">v1/files/historic/{market}/flex-unit-breakdown/1d/</span>
+        </div>
+        <div id="eos-flex" style="display:none" class="tree-children">
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📄</span><span class="tree-label file">meta.json</span><span class="tree-badge" style="background:rgba(96,165,250,0.15);color:var(--s3)">lists available years</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📁</span><span class="tree-label dir">{year}/ → .csv + .parquet (full year)</span></div>
+          <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📁</span><span class="tree-label dir">{year}/{month}/ → .parquet (monthly partition)</span><span class="tree-badge" style="background:rgba(167,139,250,0.15);color:var(--eos)">DuckDB reads these</span></div>
+        </div>
+        <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📁</span><span class="tree-label dir">v1/files/historic/{market}/meta-template.json</span><span class="tree-badge" style="background:rgba(96,165,250,0.15);color:var(--s3)">column structure, filter fields</span></div>
+        <div class="tree-item"><span class="tree-toggle"></span><span class="tree-icon">📁</span><span class="tree-label dir">configs/post_processing/{market}.yml</span><span class="tree-badge" style="background:rgba(251,204,77,0.15);color:var(--hdm)">HDM reads these</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 10: PUBLISH A BENCHMARK
+══════════════════════════════════════════ -->
+<section class="section" id="s-publish">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(52,211,153,0.15);color:var(--esdos)">Walkthrough</div>
+    <h2>End-to-End: Publishing a Backcast Benchmark</h2>
+    <p>Step through the full 5-stage journey — from the analyst's first click to a user seeing the chart.</p>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:24px;">
+    <button class="btn btn-primary" onclick="publishNext()">▶ Next Step</button>
+    <button class="btn btn-ghost" onclick="publishReset()">↺ Reset</button>
+    <span id="publish-counter" style="display:flex;align-items:center;font-size:12px;color:var(--muted)">Step 0 of 5</span>
+  </div>
+
+  <div class="timeline" id="publish-timeline">
+    <div class="timeline-step" id="pub-step-1">
+      <div class="timeline-dot">1</div>
+      <div class="timeline-title" style="color:var(--esds)">Create — POST /v1/benchmarks</div>
+      <div class="timeline-body">
+        Analyst fills in region, battery duration, price zone. A <code>benchmarks</code> DB row is created with <code style="color:var(--esds)">status = 'Draft'</code>.
+        Nothing else happens yet — no S3 writes, no SQS.
+        <div class="code-block mt-8" style="font-size:11px">
+INSERT INTO benchmarks (benchmark_uuid, region, battery_duration, status, ...)
+VALUES ('uuid1', 'gbr', 2, 'Draft', ...)</div>
+      </div>
+    </div>
+
+    <div class="timeline-step" id="pub-step-2">
+      <div class="timeline-dot">2</div>
+      <div class="timeline-title" style="color:var(--sqs)">Add Data — PUT /v1/benchmarks/{id}/add</div>
+      <div class="timeline-body">
+        Analyst picks completed Chronos simulation(s). For a 36-month benchmark, this triggers:
+        <ul style="padding-left:18px;margin-top:8px;line-height:1.8;">
+          <li>Copy full <code>site_out_*.csv</code> from ESDS bucket → Flex Explorer bucket</li>
+          <li>Slice month-by-month (36 months × trim to exact date range)</li>
+          <li>Write monthly + daily WorkbookConfigs (72 config.json files)</li>
+          <li>Send <strong style="color:var(--sqs)">72 SQS messages</strong> to FlexExplorerVisuals-Queue</li>
+          <li>Insert benchmarks_metadata rows into DB</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="timeline-step" id="pub-step-3">
+      <div class="timeline-dot">3</div>
+      <div class="timeline-title" style="color:var(--esdos)">ESDOS Processes (async, ~5–10 min)</div>
+      <div class="timeline-body">
+        Up to 10 concurrent <code>FlexExplorerVisualisationsDFunction</code> Lambda invocations run in parallel.
+        For each message:
+        <ul style="padding-left:18px;margin-top:8px;line-height:1.8;">
+          <li>Reads config.json from S3</li>
+          <li>Reads trimmed site_out_monthly.csv</li>
+          <li>Applies 3 converters: Basis → Currency → Normalisation</li>
+          <li>Writes <code>visualisation-external-{uuid}.csv</code> to S3</li>
+          <li>Writes <code>metadata.json {"status":"success"}</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="timeline-step" id="pub-step-4">
+      <div class="timeline-dot">4</div>
+      <div class="timeline-title" style="color:var(--ui)">Publish — PATCH /v1/benchmarks/{id}/status</div>
+      <div class="timeline-body">
+        Analyst clicks "Publish" in the UI. The API validates that metadata entries exist, then:
+        <div class="code-block mt-8" style="font-size:11px">
+UPDATE benchmarks
+SET status = 'Published', published_at = NOW()
+WHERE benchmark_uuid = 'uuid1'</div>
+        Benchmark is now visible to all users with access to that region.
+      </div>
+    </div>
+
+    <div class="timeline-step" id="pub-step-5">
+      <div class="timeline-dot">5</div>
+      <div class="timeline-title" style="color:var(--flex)">User Views Chart — GET /v1/benchmarks/{id}/data/internal</div>
+      <div class="timeline-body">
+        The flex-microservice:
+        <ul style="padding-left:18px;margin-top:8px;line-height:1.8;">
+          <li>Reads <code>latest_release_month</code> from DB</li>
+          <li>Fetches each month's <code>visualisation-external-{uuid}.csv</code> from S3</li>
+          <li>Concatenates 36 monthly CSVs (strips units row from all but the last)</li>
+          <li>Streams the combined CSV to the browser</li>
+        </ul>
+        Browser parses with <code>papaparse</code> → Highcharts bar chart rendered! ✓
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 11: GLOSSARY
+══════════════════════════════════════════ -->
+<section class="section" id="s-glossary">
+  <div class="section-header">
+    <div class="tag" style="background:rgba(100,116,139,0.2);color:var(--muted)">Reference</div>
+    <h2>Glossary</h2>
+    <input type="text" id="gloss-search" placeholder="Search terms..." oninput="filterGlossary()"
+      style="width:300px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;margin-top:8px;">
+  </div>
+  <div class="glossary-grid" id="glossary-grid">
+    <div class="gloss-item" data-term="chronos"><div class="gloss-term" style="color:var(--esdmr)">Chronos</div><div class="gloss-def">Aurora's energy storage dispatch model (Python). Simulates battery revenue year by year using market prices and asset parameters.</div></div>
+    <div class="gloss-item" data-term="esds"><div class="gloss-term" style="color:var(--esds)">ESDS</div><div class="gloss-def">energy-storage-dispatch-service. The orchestrator — manages simulation lifecycle, exposes the main API, launches ECS tasks.</div></div>
+    <div class="gloss-item" data-term="esdmr"><div class="gloss-term" style="color:var(--esdmr)">ESDMR</div><div class="gloss-def">energy-storage-dispatch-model-runner. The Docker container on ECS Fargate that actually runs the Chronos model.</div></div>
+    <div class="gloss-item" data-term="esdos"><div class="gloss-term" style="color:var(--esdos)">ESDOS</div><div class="gloss-def">energy-storage-dispatch-output-service. Converts raw simulation CSVs into chart-ready visualisation CSVs and Excel workbooks.</div></div>
+    <div class="gloss-item" data-term="eos"><div class="gloss-term" style="color:var(--eos)">EOS</div><div class="gloss-def">Energy Operations System. The real-data platform covering metered battery performance. Powers the Leaderboards tab.</div></div>
+    <div class="gloss-item" data-term="flex scenario"><div class="gloss-term" style="color:var(--ui)">FlexScenario</div><div class="gloss-def">A named Aurora price scenario grouping related Investment Cases (e.g., "GBR Central Flex Cycle 3"). Has region, sensitivity, flex cycle.</div></div>
+    <div class="gloss-item" data-term="investment case"><div class="gloss-term" style="color:var(--ui)">InvestmentCase</div><div class="gloss-def">A specific asset config (duration, power, site) modelled as one Chronos simulation within a FlexScenario.</div></div>
+    <div class="gloss-item" data-term="benchmark"><div class="gloss-term" style="color:var(--esds)">Benchmark</div><div class="gloss-def">A published set of backcast simulations covering a historic time period. Each month is independently processed by ESDOS.</div></div>
+    <div class="gloss-item" data-term="workbook config"><div class="gloss-term" style="color:var(--sqs)">WorkbookConfig</div><div class="gloss-def">JSON uploaded to S3 before sending an SQS message. Tells ESDOS what to generate: output_format, simulations, currency_map, basis, normalisation.</div></div>
+    <div class="gloss-item" data-term="workbook_storage_location"><div class="gloss-term" style="color:var(--sqs)">workbook_storage_location</div><div class="gloss-def">The S3 prefix carried in every SQS message. ESDOS reads config.json from here and writes results back to the same prefix.</div></div>
+    <div class="gloss-item" data-term="processing loop"><div class="gloss-term" style="color:var(--esds)">Processing Loop</div><div class="gloss-def">Lambda that runs every 15 minutes. Submits ECS tasks for simulations ready to advance to the next state. The heartbeat of the system.</div></div>
+    <div class="gloss-item" data-term="duckdb"><div class="gloss-term" style="color:var(--flex)">DuckDB</div><div class="gloss-def">In-process SQL engine used in flex-microservice Lambdas. Queries S3 parquet files directly without loading data into memory. Powers the Leaderboards tab.</div></div>
+    <div class="gloss-item" data-term="basis"><div class="gloss-term" style="color:var(--esdos)">Basis</div><div class="gloss-def">How simulation outputs are normalised: <strong>grid</strong> (per grid MW), <strong>component</strong> (per inverter MW), <strong>absolute</strong> (raw MWh/GBP values).</div></div>
+    <div class="gloss-item" data-term="universe"><div class="gloss-term" style="color:var(--muted)">Universe</div><div class="gloss-def">Deployment environment: production, staging, development. All bucket names, SSM paths, and queue names include it.</div></div>
+    <div class="gloss-item" data-term="flex unit breakdown"><div class="gloss-term" style="color:var(--eos)">flex-unit-breakdown</div><div class="gloss-def">The data type written by eos-data-uploader that powers the Leaderboards tab. One row per battery per day, with cashflow and volume breakdown.</div></div>
+    <div class="gloss-item" data-term="chartmapping"><div class="gloss-term" style="color:var(--flex)">chartMapping.csv</div><div class="gloss-def">Config file at S3 that maps internal market codes to display names and ordering in charts. Read by ESDOS when generating vis CSVs.</div></div>
+    <div class="gloss-item" data-term="origin"><div class="gloss-term" style="color:var(--eb)">Origin</div><div class="gloss-def">Aurora's scenario explorer platform. Market scenarios are published here first, then the OriginIntegrationFunction copies them to ESDS via SNS → SQS.</div></div>
+    <div class="gloss-item" data-term="tsoa"><div class="gloss-term" style="color:var(--flex)">tsoa</div><div class="gloss-def">TypeScript OpenAPI framework. Routes in ESDS and flex-microservice are generated from controller decorators — not hand-written in Express.</div></div>
+    <div class="gloss-item" data-term="flyway"><div class="gloss-term" style="color:var(--mysql)">Flyway</div><div class="gloss-def">Database migration tool. Runs versioned SQL files (V01__, V02__...) to evolve the MySQL schema. Never modify old migrations — always add new ones.</div></div>
+    <div class="gloss-item" data-term="dlq dead letter"><div class="gloss-term" style="color:var(--esdmr)">DLQ (Dead Letter Queue)</div><div class="gloss-def">Every SQS queue has a DLQ. After 5 failed attempts, the message goes there. A CloudWatch alarm fires on any DLQ message — this is your signal that something silently failed.</div></div>
+  </div>
+</section>
+
+</main>
+<script>
+// ══════ NAVIGATION ══════
+function scrollTo(id) {
+  document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'});
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.section === id);
+  });
+}
+
+// Track scroll position to update nav
+const sections = ['s-map','s-tabs','s-ic','s-bm','s-lb','s-sim','s-esdos','s-queues','s-s3','s-publish','s-glossary'];
+window.addEventListener('scroll', () => {
+  let current = sections[0];
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top < 120) current = id;
+  });
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.section === current);
+  });
+}, {passive:true});
+
+// ══════ TABS ══════
+function switchTab(group, name) {
+  // find all tab contents for this group
+  const allContents = document.querySelectorAll(`[id^="${group}-"]`);
+  allContents.forEach(el => el.classList.remove('active'));
+  document.getElementById(`${group}-${name}`).classList.add('active');
+  // update tab buttons
+  const allBtns = document.querySelectorAll(`#s-${group === 'ic' ? 'ic' : group === 'bm' ? 'bm' : group} .tab-btn`);
+  allBtns.forEach((btn, i) => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+}
+
+// ══════ ARCH DIAGRAM ══════
+const NODE_INFO = {
+  ui: {
+    title: 'aurora-ui (Flexplorer)',
+    color: 'var(--ui)',
+    bullets: [
+      'React app inside apps/flex-explorer/',
+      'Redux slices: investmentCases, benchmarks, leaderboards',
+      'Highcharts for all bar charts',
+      'React Query for API polling',
+      'URL sync: Redux state ↔ URL params'
+    ]
+  },
+  flex: {
+    title: 'flex-explorer-microservice',
+    color: 'var(--flex)',
+    bullets: [
+      '2 Lambdas: AppExpressFunction + ApiExpressFunction',
+      'Node.js / TypeScript / Express / tsoa (route generation)',
+      'MySQL DB: flex_scenarios, investment_cases, benchmarks, leaderboard_indices',
+      'Uses DuckDB to query S3 parquet (leaderboards)',
+      'Sends SQS → FlexExplorerVisuals-Queue to trigger ESDOS'
+    ]
+  },
+  esds: {
+    title: 'ESDS (energy-storage-dispatch-service)',
+    color: 'var(--esds)',
+    bullets: [
+      '7 Lambda functions: API, Processing Loop, Cleaning Loop, Event Monitor, Origin Integration...',
+      'ProcessingLoop runs every 15 min — advances simulation state machine',
+      'Launches ECS Fargate tasks (ESDMR) for each stage',
+      'MySQL DB with 30+ tables: simulations, tasks, market_scenarios, backcasts...',
+      'EventBridge → SQS FIFO → Lambda for ECS task monitoring'
+    ]
+  },
+  esdos: {
+    title: 'ESDOS (energy-storage-dispatch-output-service)',
+    color: 'var(--esdos)',
+    bullets: [
+      '4 Lambda functions, all triggered by SQS queues',
+      'FlexExplorerVisualisationsDFunction is Flexplorer\'s Lambda',
+      'Reads simulation CSVs → applies 3 converters → writes vis CSVs',
+      '3 converters: Basis (grid/component/absolute), Currency, Normalisation (per-kW)',
+      'Writes metadata.json with status: success/failure'
+    ]
+  },
+  esdmr: {
+    title: 'ESDMR (model-runner)',
+    color: 'var(--esdmr)',
+    bullets: [
+      'ECS Fargate tasks — NOT Lambda. Multiple Docker images.',
+      '4 execution modes: PREPARING / RUN_FOR_YEARS / AGGREGATE / SERIES_DISPATCH',
+      'Runs Chronos (Python package), downloaded as code.zip from S3',
+      'One task per year for RUN_FOR_YEARS — ESDS fans out N parallel tasks',
+      'All config via env vars injected by ESDS'
+    ]
+  },
+  eos: {
+    title: 'eos-data-uploader',
+    color: 'var(--eos)',
+    bullets: [
+      '2 Lambda functions + Step Function',
+      'Reads from Redshift historic.* tables',
+      'Writes CSV + Parquet to aer-eos-data-downloader-{universe}',
+      'flex_unit_breakdown jobs produce Leaderboard data',
+      'Runs on EventBridge schedules: 07:00, 09:00, 14:00, 16:00, 19:00, 21:00 UTC'
+    ]
+  },
+  hdm: {
+    title: 'historical-data-microservice',
+    color: 'var(--hdm)',
+    bullets: [
+      '3 Lambdas + ECS tasks + Step Function per market',
+      'Loads scraped parquet files from S3 → Redshift ad_hoc schema',
+      'Post-processes ad_hoc → historic.* tables via SQL jobs',
+      'Markets: GBR, AUS, ERC, CAS, PJM, MISO, DEU, NLD, GLO',
+      'SHA256-hashes SQL files to skip unchanged jobs'
+    ]
+  },
+  s3a: {
+    title: 'S3: aer-energy-storage-dispatch-{universe}',
+    color: 'var(--s3)',
+    bullets: [
+      'All simulation inputs and outputs',
+      'Key pattern: {universe}/input/{tenant}/{simId}/config/',
+      'Key pattern: {universe}/output/{tenant}/{simId}/site_out_*.csv',
+      'Also holds backcast sliced CSVs',
+      'Created and owned by ESDS'
+    ]
+  },
+  s3b: {
+    title: 'S3: aer-flex-explorer-microservice-{universe}',
+    color: 'var(--s3)',
+    bullets: [
+      'All Flexplorer-specific data',
+      'investmentCases/{tenant}/{scenarioId}/{icId}/ → WorkbookConfig + vis CSV',
+      'benchmarks/{tenant}/{benchmarkId}/{YYYY}/{MM}/ → monthly vis CSVs',
+      'config/chartMapping.csv',
+      'exports/ (1-day lifecycle for downloads)'
+    ]
+  },
+  s3c: {
+    title: 'S3: aer-eos-data-downloader-{universe}',
+    color: 'var(--s3)',
+    bullets: [
+      'Real performance data (Leaderboards)',
+      'v1/files/historic/{market}/flex-unit-breakdown/1d/{year}/{month}/',
+      'Parquet format — DuckDB reads these directly',
+      'Also: scenario CSVs, historic system/plant/technology data',
+      'Owned by eos-data-uploader service'
+    ]
+  }
+};
+
+function showNodeInfo(nodeId) {
+  const info = NODE_INFO[nodeId];
+  if (!info) return;
+  const panel = document.getElementById('node-info-panel');
+  panel.style.display = 'block';
+  panel.style.borderLeftColor = info.color;
+  document.getElementById('node-info-content').innerHTML = `
+    <div style="color:${info.color};font-weight:700;font-size:15px;margin-bottom:10px">${info.title}</div>
+    <ul style="padding-left:18px;line-height:1.8;font-size:13px;color:var(--muted)">
+      ${info.bullets.map(b => `<li>${b}</li>`).join('')}
+    </ul>
+  `;
+  // highlight node
+  document.querySelectorAll('.arch-node').forEach(n => n.classList.remove('highlighted','dimmed'));
+  const node = document.getElementById(`node-${nodeId}`);
+  if (node) node.classList.add('highlighted');
+}
+
+// ══════ ARCH DIAGRAM ARROWS ══════
+// Each entry: [fromId, toId, color-var, markerRef, label]
+const CONNECTIONS = [
+  ['node-ui',    'node-flex',  'var(--flex)', 'arrow-flex', 'HTTP'],
+  ['node-flex',  'node-esds',  'var(--flex)', 'arrow-flex', 'HTTP'],
+  ['node-flex',  'node-esdos', 'var(--sqs)',  'arrow-sqs',  'SQS'],
+  ['node-flex',  'node-s3b',   'var(--s3)',   'arrow-s3',   'S3 R/W'],
+  ['node-flex',  'node-s3c',   'var(--s3)',   'arrow-s3',   'DuckDB'],
+  ['node-esds',  'node-s3a',   'var(--s3)',   'arrow-s3',   'S3 I/O'],
+  ['node-esds',  'node-esdmr', 'var(--ecs)',  'arrow-ecs',  'ECS'],
+  ['node-esds',  'node-esdos', 'var(--sqs)',  'arrow-sqs',  'SQS'],
+  ['node-esdmr', 'node-s3a',   'var(--s3)',   'arrow-s3',   'S3 R/W'],
+  ['node-esdos', 'node-s3a',   'var(--s3)',   'arrow-s3',   'S3 read'],
+  ['node-esdos', 'node-s3b',   'var(--s3)',   'arrow-s3',   'S3 write'],
+  ['node-eos',   'node-s3c',   'var(--s3)',   'arrow-s3',   'S3 write'],
+  ['node-hdm',   'node-eos',   'var(--db)',   'arrow-db',   'feeds'],
+];
+
+function nodeCenter(id, container) {
+  const node = document.getElementById(id);
+  if (!node) return null;
+  const nr = node.getBoundingClientRect();
+  const cr = container.getBoundingClientRect();
+  return {
+    x: nr.left - cr.left + nr.width / 2,
+    y: nr.top  - cr.top  + nr.height / 2,
+    w: nr.width,
+    h: nr.height
+  };
+}
+
+function edgePoint(center, dx, dy) {
+  // Shrink to node border so line starts/ends at the box edge
+  const hw = center.w / 2 + 2;
+  const hh = center.h / 2 + 2;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const tx = hw / Math.abs(ux || 0.001);
+  const ty = hh / Math.abs(uy || 0.001);
+  const t = Math.min(tx, ty);
+  return { x: center.x + ux * t, y: center.y + uy * t };
+}
+
+function drawArrows() {
+  const svg = document.getElementById('arch-svg');
+  const container = document.getElementById('arch-diagram');
+  if (!svg || !container) return;
+  // Remove old dynamic elements
+  svg.querySelectorAll('.dyn-arrow').forEach(el => el.remove());
+
+  const NS = 'http://www.w3.org/2000/svg';
+  CONNECTIONS.forEach(([fromId, toId, color, marker, label]) => {
+    const from = nodeCenter(fromId, container);
+    const to   = nodeCenter(toId,   container);
+    if (!from || !to) return;
+
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const p1 = edgePoint(from,  dx,  dy);
+    const p2 = edgePoint(to,   -dx, -dy);
+
+    // Line
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+    line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', '1.5');
+    line.setAttribute('stroke-opacity', '0.55');
+    line.setAttribute('marker-end', `url(#${marker})`);
+    line.classList.add('dyn-arrow');
+    svg.appendChild(line);
+
+    // Mid-point label
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    const bg = document.createElementNS(NS, 'rect');
+    const text = document.createElementNS(NS, 'text');
+    text.textContent = label;
+    text.setAttribute('x', mx); text.setAttribute('y', my);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('font-size', '9');
+    text.setAttribute('fill', color);
+    text.setAttribute('font-family', 'Inter,sans-serif');
+    text.setAttribute('font-weight', '600');
+    text.classList.add('dyn-arrow');
+
+    const tw = label.length * 5.5 + 6;
+    bg.setAttribute('x', mx - tw / 2); bg.setAttribute('y', my - 7);
+    bg.setAttribute('width', tw); bg.setAttribute('height', 14);
+    bg.setAttribute('rx', '3'); bg.setAttribute('fill', 'var(--bg)');
+    bg.setAttribute('fill-opacity', '0.85');
+    bg.classList.add('dyn-arrow');
+
+    svg.appendChild(bg);
+    svg.appendChild(text);
+  });
+}
+
+// Draw on load and on resize
+window.addEventListener('load', () => setTimeout(drawArrows, 100));
+window.addEventListener('resize', drawArrows);
+
+// ══════ FLOW ANIMATIONS ══════
+// Each hop: { from, to, color (CSS var string), label }
+const FLOW_PATHS_SEQ = {
+  ic: [
+    {from:'node-ui',    to:'node-flex',  color:'#22d3ee', label:'① HTTP GET /data/internal'},
+    {from:'node-flex',  to:'node-s3b',   color:'#60a5fa', label:'② Check S3 for metadata.json'},
+    {from:'node-flex',  to:'node-esdos', color:'#fcd34d', label:'③ SQS → FlexExplorerVisuals-Queue'},
+    {from:'node-esdos', to:'node-s3a',   color:'#60a5fa', label:'④ ESDOS reads sim output CSVs'},
+    {from:'node-esdos', to:'node-s3b',   color:'#60a5fa', label:'⑤ ESDOS writes visualisation CSV'},
+    {from:'node-s3b',   to:'node-flex',  color:'#22d3ee', label:'⑥ flex-microservice reads vis CSV'},
+    {from:'node-flex',  to:'node-ui',    color:'#22d3ee', label:'⑦ HTTP 200 — chart rendered!'},
+  ],
+  bc: [
+    {from:'node-ui',    to:'node-flex',  color:'#22d3ee', label:'① Analyst publishes benchmark'},
+    {from:'node-flex',  to:'node-esds',  color:'#22d3ee', label:'② PUT /benchmarks/{id}/add'},
+    {from:'node-esds',  to:'node-s3a',   color:'#60a5fa', label:'③ Copies sim output CSVs'},
+    {from:'node-esds',  to:'node-esdos', color:'#fcd34d', label:'④ 72× SQS (one per month/day)'},
+    {from:'node-esdos', to:'node-s3a',   color:'#60a5fa', label:'⑤ ESDOS reads monthly CSVs'},
+    {from:'node-esdos', to:'node-s3b',   color:'#60a5fa', label:'⑥ ESDOS writes vis CSVs'},
+    {from:'node-flex',  to:'node-s3b',   color:'#60a5fa', label:'⑦ Reads & concatenates 36 months'},
+    {from:'node-flex',  to:'node-ui',    color:'#22d3ee', label:'⑧ Chart rendered!'},
+  ],
+  lb: [
+    {from:'node-ui',    to:'node-flex',  color:'#22d3ee', label:'① HTTP GET /leaderboard'},
+    {from:'node-flex',  to:'node-s3c',   color:'#a78bfa', label:'② DuckDB reads parquet files directly'},
+    {from:'node-s3c',   to:'node-flex',  color:'#22d3ee', label:'③ Query results streamed back'},
+    {from:'node-flex',  to:'node-ui',    color:'#22d3ee', label:'④ HTTP 200 — rankings loaded!'},
+  ],
+};
+
+let flowRunning = false;
+let flowAbort = false;
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function getNodeCenter(nodeId) {
+  const node = document.getElementById(nodeId);
+  const container = document.getElementById('arch-diagram');
+  if (!node || !container) return null;
+  const nr = node.getBoundingClientRect();
+  const cr = container.getBoundingClientRect();
+  return { x: nr.left - cr.left + nr.width/2, y: nr.top - cr.top + nr.height/2, w: nr.width, h: nr.height };
+}
+
+function getEdgePt(center, dx, dy) {
+  const hw = center.w/2 + 3, hh = center.h/2 + 3;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx/len, uy = dy/len;
+  const t = Math.min(hw / Math.abs(ux||0.001), hh / Math.abs(uy||0.001));
+  return { x: center.x + ux*t, y: center.y + uy*t };
+}
+
+function animateDot(svg, x1, y1, x2, y2, color, durationMs) {
+  return new Promise(resolve => {
+    const NS = 'http://www.w3.org/2000/svg';
+    // Glow trail line
+    const trail = document.createElementNS(NS, 'line');
+    trail.setAttribute('x1', x1); trail.setAttribute('y1', y1);
+    trail.setAttribute('x2', x1); trail.setAttribute('y2', y1);
+    trail.setAttribute('stroke', color); trail.setAttribute('stroke-width', '2.5');
+    trail.setAttribute('stroke-opacity', '0.6');
+    trail.classList.add('anim-temp');
+    svg.appendChild(trail);
+
+    // Dot
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('r', '6'); dot.setAttribute('fill', color);
+    dot.setAttribute('filter', 'url(#glow-dot)');
+    dot.setAttribute('cx', x1); dot.setAttribute('cy', y1);
+    dot.classList.add('anim-temp');
+    svg.appendChild(dot);
+
+    const start = performance.now();
+    function frame(now) {
+      if (flowAbort) { dot.remove(); trail.remove(); resolve(); return; }
+      const t = Math.min((now - start) / durationMs, 1);
+      const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // ease-in-out
+      const cx = x1 + (x2-x1)*ease, cy = y1 + (y2-y1)*ease;
+      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+      trail.setAttribute('x2', cx); trail.setAttribute('y2', cy);
+      if (t < 1) { requestAnimationFrame(frame); }
+      else { setTimeout(() => { dot.remove(); trail.remove(); resolve(); }, 80); }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function setNodeState(nodeId, state) {
+  // state: 'active' | 'visited' | 'dim' | 'normal'
+  const n = document.getElementById(nodeId);
+  if (!n) return;
+  n.classList.remove('highlighted','dimmed','node-visited');
+  if (state === 'active') {
+    n.classList.add('highlighted');
+    n.style.boxShadow = `0 0 18px currentColor`;
+  } else if (state === 'visited') {
+    n.classList.add('node-visited');
+    n.style.boxShadow = '';
+  } else if (state === 'dim') {
+    n.classList.add('dimmed');
+    n.style.boxShadow = '';
+  } else {
+    n.style.boxShadow = '';
+  }
+}
+
+async function playSequentialFlow(type) {
+  stopFlow();
+  flowAbort = false;
+  flowRunning = true;
+
+  const steps = FLOW_PATHS_SEQ[type];
+  if (!steps) return;
+
+  const svg = document.getElementById('arch-svg');
+  const label = document.getElementById('flow-step-label');
+  const allNodes = document.querySelectorAll('.arch-node');
+
+  // Collect which nodes appear in this path
+  const pathNodeIds = new Set();
+  steps.forEach(s => { pathNodeIds.add(s.from); pathNodeIds.add(s.to); });
+
+  // Dim everything not in path
+  allNodes.forEach(n => {
+    if (!pathNodeIds.has(n.id)) { setNodeState(n.id, 'dim'); }
+    else { n.classList.remove('highlighted','dimmed'); n.style.boxShadow = ''; }
+  });
+
+  // Remove old temp elements
+  svg.querySelectorAll('.anim-temp').forEach(el => el.remove());
+
+  if (label) { label.style.display = 'block'; }
+
+  for (let i = 0; i < steps.length; i++) {
+    if (flowAbort) break;
+    const {from, to, color, label: stepLabel} = steps[i];
+
+    if (label) { label.textContent = stepLabel; label.style.color = color; label.style.borderColor = color + '66'; }
+
+    // Light up source node
+    setNodeState(from, 'active');
+    await sleep(300);
+    if (flowAbort) break;
+
+    const fc = getNodeCenter(from);
+    const tc = getNodeCenter(to);
+    if (!fc || !tc) continue;
+
+    const dx = tc.x - fc.x, dy = tc.y - fc.y;
+    const p1 = getEdgePt(fc, dx, dy);
+    const p2 = getEdgePt(tc, -dx, -dy);
+
+    const dist = Math.hypot(p2.x-p1.x, p2.y-p1.y);
+    const hopDuration = Math.min(1200, Math.max(700, dist * 1.8));
+
+    await animateDot(svg, p1.x, p1.y, p2.x, p2.y, color, hopDuration);
+    if (flowAbort) break;
+
+    // Mark source visited, light up destination
+    setNodeState(from, 'visited');
+    setNodeState(to, 'active');
+    await sleep(400);
+  }
+
+  if (!flowAbort) {
+    // All done: keep last node lit for a moment, then fade
+    await sleep(1200);
+    if (!flowAbort) {
+      allNodes.forEach(n => setNodeState(n.id, 'normal'));
+      if (label) label.style.display = 'none';
+    }
+  }
+
+  svg.querySelectorAll('.anim-temp').forEach(el => el.remove());
+  flowRunning = false;
+}
+
+function startFlow(type) { playSequentialFlow(type); }
+
+function stopFlow() {
+  flowAbort = true;
+  flowRunning = false;
+  document.querySelectorAll('.anim-temp').forEach(el => el.remove());
+  document.querySelectorAll('.arch-node').forEach(n => setNodeState(n.id, 'normal'));
+  const label = document.getElementById('flow-step-label');
+  if (label) label.style.display = 'none';
+}
+
+function highlightPath(type) { startFlow(type); }
+
+function resetHighlight() {
+  stopFlow();
+}
+
+// ══════ STATE MACHINE ══════
+const STATE_DETAILS = {
+  NotLaunched: {
+    color: 'var(--muted)',
+    html: `<strong>Not Launched</strong><br>
+    The simulation row exists in the DB but no ECS task has been submitted yet.<br>
+    <code>status = 'NotLaunched'</code> in the <code>simulations</code> table.<br><br>
+    <strong>What triggers the move forward?</strong> The ProcessingLoop (every 15 min) picks up simulations
+    in this state and submits an ECS task with <code>mode=PREPARING</code>.`
+  },
+  Preparing: {
+    color: 'var(--esds)',
+    html: `<strong>Preparing</strong> — ECS task running <code>mode=PREPARING</code><br><br>
+    The ESDMR Docker container:<br>
+    • Downloads <code>code.zip</code> from S3 (<code>gitlab/chronos_inputs/{commitHash}/code.zip</code>)<br>
+    • Downloads market price CSVs and asset parameters<br>
+    • Runs <code>prepare_data()</code> to pre-process inputs<br>
+    • Uploads processed price data back to S3<br><br>
+    <strong>DB table:</strong> <code>ecs_task_state_changes</code> — EventBridge → SQS FIFO → SQSEventMonitoringFn inserts rows here.
+    ProcessingLoop reads "STOPPED code=0" to know PREPARING is done.`
+  },
+  Running: {
+    color: 'var(--esdmr)',
+    html: `<strong>Running</strong> — one ECS task per year, submitted in parallel<br><br>
+    ProcessingLoop fans out <em>N tasks</em> (one per year in the simulation range) with <code>mode=RUN_FOR_YEARS</code>.<br>
+    Each task runs Chronos for its year and writes output CSVs to <code>{universe}/output/{tenant}/{simId}/{year}/</code>.<br><br>
+    ProcessingLoop polls <code>ecs_task_state_changes</code>. Only when ALL year tasks report <code>STOPPED code=0</code>
+    does it move to Aggregating.`
+  },
+  Aggregating: {
+    color: 'var(--eos)',
+    html: `<strong>Aggregating</strong> — ECS task running <code>mode=AGGREGATE</code><br><br>
+    A single task collects all year outputs and concatenates them into:<br>
+    • <code>site_out_monthly.csv</code> / <code>.parquet</code><br>
+    • <code>site_out_daily.csv</code><br>
+    • <code>site_out_yearly.csv</code><br>
+    • <code>site_out_quarterly.csv</code><br><br>
+    These are written to <code>{universe}/output/{tenant}/{simId}/</code> in the ESDS bucket.
+    ESDOS will read them next.`
+  },
+  Complete: {
+    color: 'var(--esdos)',
+    html: `<strong>Complete</strong> — simulation finished ✓<br><br>
+    ProcessingLoop detects the AGGREGATE task stopped with code 0 and updates DB:<br>
+    <code>status = 'Complete'</code>.<br><br>
+    At this point, for Investment Cases: flex-microservice has already sent the WorkbookConfig to SQS
+    and is polling S3 for <code>metadata.json</code> with <code>status = "success"</code>.<br>
+    ESDOS processes the SQS message (concurrently with the simulation) and writes the vis CSV.`
+  }
+};
+function selectState(name) {
+  document.querySelectorAll('.state-node').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('st-' + name);
+  if (el) el.classList.add('active');
+  const detail = document.getElementById('state-detail');
+  const content = document.getElementById('state-detail-content');
+  const info = STATE_DETAILS[name];
+  if (!info) return;
+  detail.style.borderColor = info.color;
+  content.innerHTML = `<div style="color:${info.color};margin-bottom:8px;font-weight:700">${name}</div>
+    <div style="font-size:12.5px;line-height:1.7;color:var(--muted)">${info.html}</div>`;
+  detail.style.display = 'block';
+}
+
+// ══════ S3 TREE ══════
+function toggleTree(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? 'block' : 'none';
+  if (arrow) arrow.textContent = hidden ? '▲' : '▼';
+}
+function treeClick(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? 'block' : 'none';
+  // find toggle icon in parent
+  const parent = el.previousElementSibling;
+  if (parent) {
+    const toggle = parent.querySelector('.tree-toggle');
+    if (toggle) toggle.textContent = hidden ? '▼' : '▶';
+  }
+}
+
+// ══════ PUBLISH TIMELINE ══════
+let publishStep = 0;
+const PUBLISH_TOTAL = 5;
+function publishNext() {
+  if (publishStep < PUBLISH_TOTAL) {
+    publishStep++;
+    const el = document.getElementById('pub-step-' + publishStep);
+    if (el) {
+      // mark previous steps done
+      for (let i = 1; i < publishStep; i++) {
+        const prev = document.getElementById('pub-step-' + i);
+        if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
+      }
+      el.classList.add('active');
+      el.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+    document.getElementById('publish-counter').textContent = `Step ${publishStep} of ${PUBLISH_TOTAL}`;
+  }
+}
+function publishReset() {
+  publishStep = 0;
+  for (let i = 1; i <= PUBLISH_TOTAL; i++) {
+    const el = document.getElementById('pub-step-' + i);
+    if (el) { el.classList.remove('active','done'); }
+  }
+  document.getElementById('publish-counter').textContent = 'Step 0 of 5';
+}
+
+// ══════ ER DIAGRAM ══════
+const ER_DETAILS = {
+  team: {
+    title: 'Team', color: '#94a3b8',
+    fields: ['team_id (PK)', 'name', 'tenant_id'],
+    note: 'A group of users who share access to projects and simulations. Projects have a default_team_id FK.'
+  },
+  project: {
+    title: 'Project', color: '#94a3b8',
+    fields: ['project_id (PK)', 'title', 'description', 'tenant_id', 'default_team_id (FK→teams)', 'read_only', 'created_by', 'is_deleted'],
+    note: 'Container for simulations. Every simulation currently requires a project_id (NOT NULL FK). This is the V4 constraint to relax for asset-specific backcasting.'
+  },
+  simulation: {
+    title: 'Simulation', color: 'var(--esds)',
+    fields: ['simulation_id (PK)', 'project_id NOT NULL (FK→projects) ← V4 target', 'execution_status (Preparing/Running/Aggregating/Complete/Errored/Aborted)', 'config JSON (startYear, endYear, executionConfig)', 'inputs JSON (region, market scenario ref)', 'origin_scenario_id', 'currency_code', 'model_version', 'tenant_id', 'launched_at'],
+    note: 'The atomic Chronos run. For backcasting: covers exactly one calendar month. For ICs: multi-year. project_id is NOT NULL — this is the constraint that V4 will change to support linking simulations directly to backcasts.'
+  },
+  backcast: {
+    title: 'Backcast', color: 'var(--esdmr)',
+    fields: ['backcast_id (PK)', 'project_id NOT NULL (FK→projects)', 'title', 'description', 'tenant_id', 'created_by'],
+    note: 'An ESDS-internal entity grouping monthly simulations run against historical prices. Linked to simulations via the backcast_simulations join table. Note: a Backcast in ESDS ≠ Benchmark in flex-microservice — the Benchmark is the published, client-visible version.'
+  },
+  'bm-meta': {
+    title: 'BenchmarkMetadata', color: 'var(--esdos)',
+    fields: ['id (PK)', 'benchmark_uuid (FK→benchmarks, CASCADE)', 'simulation_uuid (opaque string — NO DB FK to ESDS)', 'start_date', 'end_date', 'chart_mapping_version', 'is_deleted'],
+    note: 'Bridge between Benchmark and ESDS simulation. simulation_uuid is a plain string — no FK constraint. If ESDS simulation is deleted, this record becomes stale silently.'
+  },
+  benchmark: {
+    title: 'Benchmark', color: 'var(--esdos)',
+    fields: ['benchmark_uuid (PK)', 'title', 'region (RegionGroupCodes)', 'battery_duration (hours)', 'first_release_month (DATE)', 'latest_release_month (DATE)', 'base_currency_code', 'status (Draft/Published/Retired)', 'tenant', 'published_at', 'created_by'],
+    note: 'The client-visible container shown in Flexplorer Tab 2. One per region × battery_duration. Published monthly by Research (~8th of each month). A Benchmark wraps N BenchmarkMetadata rows, each pointing to one ESDS simulation.'
+  },
+  flexscenario: {
+    title: 'FlexScenario', color: 'var(--ui)',
+    fields: ['flex_scenario_uuid (PK)', 'title', 'region (RegionGroupCodes)', 'sensitivity (free text)', 'prmf_cycle (DATETIME)', 'default_currency', 'status (Draft/Published/Retired)', 'chart_mapping_version', 'tenant'],
+    note: 'Groups Investment Cases by region + sensitivity + PRMF cycle. Published quarterly by Research. Has NO price_zone column — price zone is stored per InvestmentCase in config JSON.'
+  },
+  ic: {
+    title: 'InvestmentCase', color: 'var(--flex)',
+    fields: ['investment_case_uuid (PK)', 'flex_scenario_uuid (FK→flex_scenarios, CASCADE)', 'simulation_uuid (opaque — NO DB FK)', 'titleSuffix', 'title_template', 'config JSON (priceZone, forecast_start, forecast_end, site params)', 'currency_code', 'is_deleted'],
+    note: 'One battery asset config linked to one ESDS simulation. simulation_uuid is opaque — no DB FK. NOTE: investment_cases has NO status column (it was dropped in migration V04). Status is inherited from the parent FlexScenario.'
+  }
+};
+
+function erClick(id) {
+  document.querySelectorAll('.er-entity').forEach(e => e.classList.remove('er-active'));
+  const el = document.getElementById('er-' + id);
+  if (el) el.classList.add('er-active');
+
+  const info = ER_DETAILS[id];
+  if (!info) return;
+  const panel = document.getElementById('er-detail');
+  const content = document.getElementById('er-detail-content');
+  panel.style.borderColor = info.color;
+  content.innerHTML = `
+    <div style="color:${info.color};font-weight:700;font-size:14px;margin-bottom:10px">${info.title}</div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">COLUMNS</div>
+        ${info.fields.map(f => `<div style="font-size:11px;font-family:monospace;padding:2px 0;color:${f.includes('NOT NULL')||f.includes('opaque')?'var(--esdmr)':f.includes('PK')?'var(--sqs)':f.includes('FK')?'var(--s3)':'var(--muted)'}">${f}</div>`).join('')}
+      </div>
+      <div style="flex:2;min-width:240px;font-size:12px;color:var(--muted);line-height:1.7;border-left:2px solid var(--border);padding-left:16px">
+        ${info.note}
+      </div>
+    </div>`;
+  panel.style.display = 'block';
+}
+
+// ══════ GLOSSARY SEARCH ══════
+function filterGlossary() {
+  const q = document.getElementById('gloss-search').value.toLowerCase();
+  document.querySelectorAll('.gloss-item').forEach(item => {
+    const term = item.dataset.term || '';
+    const text = item.textContent.toLowerCase();
+    item.style.display = (term.includes(q) || text.includes(q)) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
